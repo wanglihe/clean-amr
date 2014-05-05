@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <typedef.h>
 #include <interf_enc.h>
+#include <interf_dec.h>
 
 static const char* pass = "pass";
 static const char* fail = "fail";
@@ -18,6 +19,8 @@ static const unsigned long size[][2] = {
     {sizeof(Float64), 8}
 };
 
+static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
+
 int main() {
     for (int i = 0; i < 5; i++) {
         const char* result = (size[i][0] == size[i][1] ? pass:fail);
@@ -28,6 +31,7 @@ int main() {
     }
     int dtx = 0;
     void* enstate = Encoder_Interface_init(dtx);
+    void* destate = Decoder_Interface_init();
     srand(0);
     for (int i=0; i < 1024; i++) {
         int req_mode = 7;
@@ -38,7 +42,12 @@ int main() {
         unsigned char serial_data[32];
         int byte_counter = Encoder_Interface_Encode(enstate, req_mode, speech, serial_data, 0);
         printf("test times: %d, bytes: %d\n", i, byte_counter);
+        enum Mode dec_mode = (serial_data[0] >> 3) & 0x000F;
+        int read_size = block_size[dec_mode];
+        Decoder_Interface_Decode(destate, serial_data, speech, 0);
+        printf("test times: %d, bytes: %d\n", i, read_size);
     }
     Encoder_Interface_exit(enstate);
+    Decoder_Interface_exit(destate);
     return 0;
 }
