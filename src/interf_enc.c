@@ -795,4 +795,3 @@ void Encoder_Interface_exit( void *state )
    free( s );
    state = NULL;
 }
-  

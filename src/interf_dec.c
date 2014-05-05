@@ -879,4 +879,3 @@ void Decoder_Interface_Decode( void *st,
    s->prev_ft = frame_type;
    s->prev_mode = mode;
 }
-  
