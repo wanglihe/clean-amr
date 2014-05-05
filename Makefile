@@ -37,5 +37,6 @@ check: check.o $(AMRNB_OBJS)
 
 clean:
 	rm -f $(AMRNBDIR)/*.o *.o 
+	rm -f check
 
 check.o: check.c $(AMRNBDIR)/typedef.h

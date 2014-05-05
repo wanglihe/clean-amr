@@ -27,7 +27,18 @@ int main() {
         }
     }
     int dtx = 0;
-    int *enstate = Encoder_Interface_init(dtx);
+    void* enstate = Encoder_Interface_init(dtx);
+    srand(0);
+    for (int i=0; i < 1024; i++) {
+        int req_mode = 7;
+        short speech[160];
+        for (int j = 0; j < 160; j++) {
+           speech[j] = (short) rand();
+        }
+        unsigned char serial_data[32];
+        int byte_counter = Encoder_Interface_Encode(enstate, req_mode, speech, serial_data, 0);
+        printf("test times: %d, bytes: %d\n", i, byte_counter);
+    }
     Encoder_Interface_exit(enstate);
     return 0;
 }
