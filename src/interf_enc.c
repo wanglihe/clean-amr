@@ -56,8 +56,6 @@ typedef struct
 } enc_interface_State;
 
 
-#ifndef IF2
-
 /*
  * EncoderMMS
  *
@@ -235,190 +233,6 @@ static int EncoderMMS( enum Mode mode, Word16 *param, UWord8 *stream, enum
    return( (int)block_size[mode] );
 }
 
-#else
-
-/*
- * Encoder3GPP
- *
- *
- * Parameters:
- *    mode                 I: AMR mode
- *    param                I: Encoder output parameters
- *    stream               O: packed speech frame
- *    frame_type           I: frame type (DTX)
- *    speech_mode          I: speech mode (DTX)
- *
- * Function:
- *    Pack encoder output parameters to octet structure according
- *    importance table.
- * Returns:
- *    number of octets
- */
-static int Encoder3GPP( enum Mode mode, Word16 *param, UWord8 *stream, enum
-      TXFrameType frame_type, enum Mode speech_mode )
-{
-   Word32 j = 0;
-   Word16 *mask;
-
-   memset(stream, 0, block_size[mode]);
-
-   if ( mode == 15 ) {
-      *stream = 0xF;
-      return 1;
-   }
-   else if ( mode == MRDTX ) {
-      mask = order_MRDTX;
-      *stream = 0x40;
-
-      for ( j = 5; j < 40; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-
-      /* add SID type information */
-      if ( frame_type == TX_SID_UPDATE )
-         *stream += 0x80;
-      stream++;
-
-      /* speech mode indication */
-      *stream = ( unsigned char )speech_mode;
-
-      /* don't shift at the end of the function */
-      return 6;
-   }
-   else if ( mode == MR475 ) {
-      mask = order_MR475;
-      *stream = 0;
-
-      for ( j = 5; j < 100; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR515 ) {
-      mask = order_MR515;
-      *stream = 0x8;
-
-      for ( j = 5; j < 108; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR59 ) {
-      mask = order_MR59;
-      *stream = 0x10;
-
-      for ( j = 5; j < 123; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR67 ) {
-      mask = order_MR67;
-      *stream = 0x18;
-
-      for ( j = 5; j < 139; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR74 ) {
-      mask = order_MR74;
-      *stream = 0x20;
-
-      for ( j = 5; j < 153; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR795 ) {
-      mask = order_MR795;
-      *stream = 0x28;
-
-      for ( j = 5; j < 164; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR102 ) {
-      mask = order_MR102;
-      *stream = 0x30;
-
-      for ( j = 5; j < 209; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-   else if ( mode == MR122 ) {
-      mask = order_MR122;
-      *stream = 0x38;
-
-      for ( j = 5; j < 249; j++ ) {
-         if ( param[ * mask] & *( mask + 1 ) )
-            *stream += 0x80;
-         mask += 2;
-
-         if ( j % 8 )
-            *stream >>= 1;
-         else
-            stream++;
-      }
-   }
-
-   /* shift remaining bits */
-   *stream >>= ( 8 - j % 8 );
-   return( (int)block_size[mode] );
-}
-#endif
-
 /*
  * Sid_Sync_reset
  *
@@ -593,14 +407,7 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
       Sid_Sync_reset( s );
    }
 
-#ifdef IF2
-   return Encoder3GPP( used_mode, prm, serial, txFrameType, mode );
-
-#else
    return EncoderMMS( used_mode, prm, serial, txFrameType, mode );
-
-#endif
-
 }
 
 
