@@ -6,7 +6,8 @@ MAKEFILENAME = makefile
 AMRNBDIR = 3gpp-amrnb/src
 AMRWBDIR = 3gpp-amrwb/src
 
-CFLAGS = -std=c99 -O3 -Wall  -I$(AMRNBDIR)
+CFLAGS = -O3 -Wall 
+CFLAGS_3GPPNB = -std=c89 $(CFLAGS) -I$(AMRNBDIR)
 
 LDFLAGS = -lm
 
@@ -28,15 +29,16 @@ ALL_SRCS=$(AMRNB_SRCS) $(AMRWB_SRCS)
 
 all: $(AMRNB_OBJS)
 
-check: check.o $(AMRNB_OBJS)
+c3gnb: c3gnb.o $(AMRNB_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
-
+$(AMRNBDIR)/%.o: $(AMRNBDIR)/%.c
+	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
 
 clean:
 	rm -f $(AMRNBDIR)/*.o *.o 
-	rm -f check
+	rm -f c3gnb
 
-check.o: check.c $(AMRNBDIR)/typedef.h
+c3gnb.o: c3gnb.c $(AMRNBDIR)/typedef.h
+	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
+

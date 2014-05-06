@@ -22,7 +22,8 @@ static const unsigned long size[][2] = {
 static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
 
 int main() {
-    for (int i = 0; i < 6; i++) {
+    int i,j;
+    for (i = 0; i < 6; i++) {
         const char* result = (size[i][0] == size[i][1] ? pass:fail);
         printf("%s size: %lu, %s\n", name[i], size[i][0], result);
         if (result == fail) {
@@ -33,10 +34,10 @@ int main() {
     void* enstate = Encoder_Interface_init(dtx);
     void* destate = Decoder_Interface_init();
     srand(0);
-    for (int i=0; i < 1024; i++) {
+    for (i=0; i < 1024; i++) {
         int req_mode = 7;
         short speech[160];
-        for (int j = 0; j < 160; j++) {
+        for (j = 0; j < 160; j++) {
            speech[j] = (short) rand();
         }
         unsigned char serial_data[32];
