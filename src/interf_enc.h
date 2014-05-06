@@ -37,12 +37,7 @@
  */
 int Encoder_Interface_Encode( void *st, enum Mode mode, short *speech,
 
-#ifndef ETSI
       unsigned char *serial,  /* max size 31 bytes */
-
-#else
-      short *serial, /* size 500 bytes */
-#endif
 
       int forceSpeech );   /* use speech mode */
 

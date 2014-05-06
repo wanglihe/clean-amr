@@ -16,8 +16,8 @@
  *     AMR Floating-Point Codec
  *
  * Contains:
- *    This module provides means to conversion from 3GPP or ETSI
- *    bitstream to AMR parameters
+ *    This module provides means to conversion from 3GPP bitstream to AMR
+ *    parameters
  */
 
 /*
@@ -48,131 +48,6 @@ struct
 
 
 }dec_interface_State;
-
-#ifdef ETSI
-
-
-/*
- * Bin2Int
- *
- *
- * Parameters:
- *    no_of_bits        I: number of bits associated with value
- *    bits              O: address where bits are written
- *
- * Function:
- *    Read nuber of bits from the array and convert to integer.
- *
- * Returns:
- *    value
- */
-static Word16 Bin2Int( Word16 no_of_bits, Word16 *bitstream )
-{
-   Word32 value, i, bit;
-
-
-   value = 0;
-
-   for ( i = 0; i < no_of_bits; i++ ) {
-      value = value << 1;
-      bit = *bitstream++;
-
-      if ( bit == 0x1 )
-         value = value + 1;
-   }
-   return( Word16 )( value );
-}
-
-
-/*
- * Bits2Prm
- *
- *
- * Parameters:
- *    mode              I: AMR mode
- *    bits              I: serial bits
- *    param             O: AMR parameters
- *
- * Function:
- *    Retrieves the vector of encoder parameters from
- *    the received serial bits in a frame.
- *
- * Returns:
- *    void
- */
-static void Bits2Prm( enum Mode mode, Word16 bits[], Word16 prm[] )
-{
-   Word32 i;
-
-
-   switch ( mode ) {
-      case MR122:
-         for ( i = 0; i < PRMNO_MR122; i++ ) {
-            prm[i] = Bin2Int( bitno_MR122[i], bits );
-            bits += bitno_MR122[i];
-         }
-         break;
-
-      case MR102:
-         for ( i = 0; i < PRMNO_MR102; i++ ) {
-            prm[i] = Bin2Int( bitno_MR102[i], bits );
-            bits += bitno_MR102[i];
-         }
-         break;
-
-      case MR795:
-         for ( i = 0; i < PRMNO_MR795; i++ ) {
-            prm[i] = Bin2Int( bitno_MR795[i], bits );
-            bits += bitno_MR795[i];
-         }
-         break;
-
-      case MR74:
-         for ( i = 0; i < PRMNO_MR74; i++ ) {
-            prm[i] = Bin2Int( bitno_MR74[i], bits );
-            bits += bitno_MR74[i];
-         }
-         break;
-
-      case MR67:
-         for ( i = 0; i < PRMNO_MR67; i++ ) {
-            prm[i] = Bin2Int( bitno_MR67[i], bits );
-            bits += bitno_MR67[i];
-         }
-         break;
-
-      case MR59:
-         for ( i = 0; i < PRMNO_MR59; i++ ) {
-            prm[i] = Bin2Int( bitno_MR59[i], bits );
-            bits += bitno_MR59[i];
-         }
-         break;
-
-      case MR515:
-         for ( i = 0; i < PRMNO_MR515; i++ ) {
-            prm[i] = Bin2Int( bitno_MR515[i], bits );
-            bits += bitno_MR515[i];
-         }
-         break;
-
-      case MR475:
-         for ( i = 0; i < PRMNO_MR475; i++ ) {
-            prm[i] = Bin2Int( bitno_MR475[i], bits );
-            bits += bitno_MR475[i];
-         }
-         break;
-
-      case MRDTX:
-         for ( i = 0; i < PRMNO_MRDTX; i++ ) {
-            prm[i] = Bin2Int( bitno_MRDTX[i], bits );
-            bits += bitno_MRDTX[i];
-         }
-         break;
-   }
-   return;
-}
-
-#else
 
 #ifndef IF2
 
@@ -546,7 +421,6 @@ enum Mode Decoder3GPP( Word16 *param, UWord8 *stream, enum RXFrameType
    return mode;
 }
 #endif
-#endif
 
 /*
  * Decoder_Interface_reset
@@ -649,20 +523,14 @@ void Decoder_Interface_exit( void *state )
  */
 void Decoder_Interface_Decode( void *st,
 
-#ifndef ETSI
       UWord8 *bits,
 
-#else
-      Word16 *bits,
-#endif
 
       Word16 *synth, int bfi)
 {
    enum Mode mode;   /* AMR mode */
 
-#ifndef ETSI
    enum Mode speech_mode = MR475;   /* speech mode */
-#endif
 
    Word16 prm[PRMNO_MR122];   /* AMR parameters */
 
@@ -674,15 +542,12 @@ void Decoder_Interface_Decode( void *st,
    Word32 i;   /* counter */
    Word32 resetFlag = 1;   /* homing frame */
 
-#ifndef ETSI
 #ifndef IF2
    Word16 q_bit;
-#endif
 #endif
 
    s = ( dec_interface_State * )st;
 
-#ifndef ETSI
 
    /*
     * extract mode information and frametype,
@@ -721,34 +586,6 @@ void Decoder_Interface_Decode( void *st,
           }
        }
    }
-#else
-   bfi = 0;
-   frame_type = bits[0];
-
-   switch ( frame_type ) {
-      case 0:
-         frame_type = RX_SPEECH_GOOD;
-         mode = bits[245];
-         Bits2Prm( mode, &bits[1], prm );
-         break;
-
-      case 1:
-         frame_type = RX_SID_FIRST;
-         mode = bits[245];
-         break;
-
-      case 2:
-         frame_type = RX_SID_UPDATE;
-         mode = bits[245];
-         Bits2Prm( MRDTX, &bits[1], prm );
-         break;
-
-      case 3:
-         frame_type = RX_NO_DATA;
-         mode = s->prev_mode;
-         break;
-   }
-#endif
 
    /* test for homing frame */
    if ( s->reset_flag_old == 1 ) {

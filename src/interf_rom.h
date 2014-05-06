@@ -49,13 +49,11 @@
  * tables
  */
 #ifndef IF2
-#ifndef ETSI
 static const UWord8 block_size[16]={ 13, 14, 16, 18, 20, 21, 27, 32,
                                     6 , 0 , 0 , 0 , 0 , 0 , 0 , 1  };
 
 static const UWord8 toc_byte[16]={0x04, 0x0C, 0x14, 0x1C, 0x24, 0x2C, 0x34, 0x3C,
 								  0x44, 0x4C, 0x54, 0x5C, 0x64, 0x6C, 0x74, 0x7C};
-#endif
 #else
 /* One encoded frame (bytes) */
 static const UWord8 block_size[16]={ 13, 14, 16, 18, 19, 21, 26, 31,

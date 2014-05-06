@@ -56,130 +56,6 @@ typedef struct
 } enc_interface_State;
 
 
-#ifdef ETSI
-/*
- * Prm2Bits
- *
- *
- * Parameters:
- *    value             I: value to be converted to binary
- *    no_of_bits        I: number of bits associated with value
- *    bitstream         O: address where bits are written
- *
- * Function:
- *    Convert integer to binary and write the bits to the array.
- *    The most significant bits are written first.
- * Returns:
- *    void
- */
-static void Int2Bin( Word16 value, Word16 no_of_bits, Word16 *bitstream )
-{
-   Word32 i, bit;
-   Word16 *pt_bitstream;
-
-   pt_bitstream = &bitstream[no_of_bits];
-
-   for ( i = 0; i < no_of_bits; i++ ) {
-      bit = value & 0x0001;
-
-      if ( bit == 0 ) {
-         * --pt_bitstream = 0;
-      }
-      else {
-         * --pt_bitstream = 1;
-      }
-      value = ( Word16 )( value >> 1 );
-   }
-}
-
-
-/*
- * Prm2Bits
- *
- *
- * Parameters:
- *    mode              I: AMR mode
- *    prm               I: analysis parameters
- *    bits              O: serial bits
- *
- * Function:
- *    converts the encoder parameter vector into a vector of serial bits.
- * Returns:
- *    void
- */
-static void Prm2Bits( enum Mode mode, Word16 prm[], Word16 bits[] )
-{
-   Word32 i;
-
-   switch ( mode ) {
-      case MR122:
-         for ( i = 0; i < PRMNO_MR122; i++ ) {
-            Int2Bin( prm[i], bitno_MR122[i], bits );
-            bits += bitno_MR122[i];
-         }
-         break;
-
-      case MR102:
-         for ( i = 0; i < PRMNO_MR102; i++ ) {
-            Int2Bin( prm[i], bitno_MR102[i], bits );
-            bits += bitno_MR102[i];
-         }
-         break;
-
-      case MR795:
-         for ( i = 0; i < PRMNO_MR795; i++ ) {
-            Int2Bin( prm[i], bitno_MR795[i], bits );
-            bits += bitno_MR795[i];
-         }
-         break;
-
-      case MR74:
-         for ( i = 0; i < PRMNO_MR74; i++ ) {
-            Int2Bin( prm[i], bitno_MR74[i], bits );
-            bits += bitno_MR74[i];
-         }
-         break;
-
-      case MR67:
-         for ( i = 0; i < PRMNO_MR67; i++ ) {
-            Int2Bin( prm[i], bitno_MR67[i], bits );
-            bits += bitno_MR67[i];
-         }
-         break;
-
-      case MR59:
-         for ( i = 0; i < PRMNO_MR59; i++ ) {
-            Int2Bin( prm[i], bitno_MR59[i], bits );
-            bits += bitno_MR59[i];
-         }
-         break;
-
-      case MR515:
-         for ( i = 0; i < PRMNO_MR515; i++ ) {
-            Int2Bin( prm[i], bitno_MR515[i], bits );
-            bits += bitno_MR515[i];
-         }
-         break;
-
-      case MR475:
-         for ( i = 0; i < PRMNO_MR475; i++ ) {
-            Int2Bin( prm[i], bitno_MR475[i], bits );
-            bits += bitno_MR475[i];
-         }
-         break;
-
-      case MRDTX:
-         for ( i = 0; i < PRMNO_MRDTX; i++ ) {
-            Int2Bin( prm[i], bitno_MRDTX[i], bits );
-            bits += bitno_MRDTX[i];
-         }
-         break;
-   }
-   return;
-}
-
-#else
-
 #ifndef IF2
 
 /*
@@ -542,7 +418,6 @@ static int Encoder3GPP( enum Mode mode, Word16 *param, UWord8 *stream, enum
    return( (int)block_size[mode] );
 }
 #endif
-#endif
 
 /*
  * Sid_Sync_reset
@@ -573,8 +448,8 @@ static void Sid_Sync_reset( enc_interface_State *st )
  *    st                I: pointer to state structure
  *    mode              I: Speech Mode
  *    speech            I: Input speech
- *    serial            O: Output octet structure 3GPP or
- *                         ETSI serial stream
+ *    serial            O: Output octet structure 3GPP
+ *                         stream
  *    force_speech      I: Force speech in DTX
  *
  * Function:
@@ -585,12 +460,8 @@ static void Sid_Sync_reset( enc_interface_State *st )
  */
 int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
 
-#ifndef ETSI
       UWord8 *serial,
 
-#else
-      Word16 *serial,
-#endif
 
       int force_speech )
 {
@@ -722,20 +593,12 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
       Sid_Sync_reset( s );
    }
 
-#ifndef ETSI
 #ifdef IF2
    return Encoder3GPP( used_mode, prm, serial, txFrameType, mode );
 
 #else
    return EncoderMMS( used_mode, prm, serial, txFrameType, mode );
 
-#endif
-#else
-
-   Prm2Bits( used_mode, prm, &serial[1] );
-   serial[0] = ( Word16 )txFrameType;
-   serial[245] = ( Word16 )mode;
-   return 500;
 #endif
 
 }
