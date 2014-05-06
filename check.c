@@ -22,7 +22,7 @@ static const unsigned long size[][2] = {
 static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
 
 int main() {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         const char* result = (size[i][0] == size[i][1] ? pass:fail);
         printf("%s size: %lu, %s\n", name[i], size[i][0], result);
         if (result == fail) {
