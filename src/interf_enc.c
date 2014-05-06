@@ -229,7 +229,10 @@ static int EncoderMMS( enum Mode mode, Word16 *param, UWord8 *stream, enum
    }
 
    /* shift remaining bits */
-   if ( k = j % 8 )	*stream <<= ( 8 - k );
+   k = j % 8;
+   if (k) {
+       *stream <<= ( 8 - k );
+   }
    return( (int)block_size[mode] );
 }
 

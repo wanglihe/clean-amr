@@ -10446,9 +10446,9 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
    Float32 mem_syn_save[M];   /* Filter memory */
    Float32 mem_w0_save[M];   /* Filter memory */
    Float32 mem_err_save[M];   /* Filter memory */
-   Float32 sharp_save = 0;   /* Sharpening */
-   Float32 gain_pit_sf0;   /* Quantized pitch gain for sf0 */
-   Float32 gain_code_sf0;   /* Quantized codebook gain for sf0 */
+   Float32 sharp_save = 0.0;   /* Sharpening */
+   Float32 gain_pit_sf0 = 0.0;   /* Quantized pitch gain for sf0 */
+   Float32 gain_code_sf0 = 0.0;   /* Quantized codebook gain for sf0 */
    Word16 i_subfr_sf0 = 0;   /* Position in exc[] for sf0 */
 
 
