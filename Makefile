@@ -1,5 +1,5 @@
 CC = gcc
-#CC = clang 
+#CC = clang
 MAKEFILENAME = makefile
 
 

@@ -207,9 +207,9 @@ typedef struct
    Word16 *gain_idx_ptr;
 
 
-   gc_predState * gc_predSt;
-   gc_predState * gc_predUncSt;
-   gain_adaptState * adaptSt;
+   gc_predState gc_predSt;
+   gc_predState gc_predUncSt;
+   gain_adaptState adaptSt;
 }gainQuantState;
 typedef struct
 {
@@ -219,7 +219,7 @@ typedef struct
 }Pitch_frState;
 typedef struct
 {
-   Pitch_frState * pitchSt;
+   Pitch_frState pitchSt;
 }clLtpState;
 typedef struct
 {
@@ -253,7 +253,7 @@ typedef struct
 }LevinsonState;
 typedef struct
 {
-   LevinsonState * LevinsonSt;
+   LevinsonState LevinsonSt;
 }lpcState;
 typedef struct
 {
@@ -289,18 +289,18 @@ typedef struct
 
 
    /* Substates */
-   lpcState * lpcSt;
-   lspState * lspSt;
-   clLtpState * clLtpSt;
-   gainQuantState * gainQuantSt;
-   pitchOLWghtState * pitchOLWghtSt;
-   tonStabState * tonStabSt;
+   lpcState lpcSt;
+   lspState lspSt;
+   clLtpState clLtpSt;
+   gainQuantState gainQuantSt;
+   pitchOLWghtState pitchOLWghtSt;
+   tonStabState tonStabSt;
    vadState vadSt;
 
    Word32 dtx;
 
 
-   dtx_encState * dtxEncSt;
+   dtx_encState dtxEncSt;
 
    /* Filter's memory */
    Float32 mem_syn[M], mem_w0[M], mem_w[M];
@@ -311,7 +311,7 @@ typedef struct
 }cod_amrState;
 typedef struct
 {
-   cod_amrState * cod_amr_state;
+   cod_amrState cod_amr_state;
    Pre_ProcessState pre_state;
 
    Word32 dtx;
@@ -10484,8 +10484,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       *used_mode = mode;
 
       /* NB! used_mode may change here */
-      compute_sid_flag = tx_dtx_handler( vad_flag, &st->dtxEncSt->
-            decAnaElapsedCount, &st->dtxEncSt->dtxHangoverCount, used_mode );
+      compute_sid_flag = tx_dtx_handler( vad_flag, &st->dtxEncSt.
+            decAnaElapsedCount, &st->dtxEncSt.dtxHangoverCount, used_mode );
    }
    else {
       compute_sid_flag = 0;
@@ -10502,7 +10502,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
     * subframes (both quantized and unquantized).
     */
    /* LP analysis */
-   lpc( st->lpcSt->LevinsonSt->old_A, st->p_window, st->p_window_12k2, A_t, mode
+   lpc( st->lpcSt.LevinsonSt.old_A, st->p_window, st->p_window_12k2, A_t, mode
          );
 
    /*
@@ -10510,34 +10510,34 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
     * the line spectral pair (LSP) representation for
     * quantization and interpolation purposes.
     */
-   lsp( mode, *used_mode, st->lspSt->lsp_old, st->lspSt->lsp_old_q, st->lspSt->
+   lsp(mode, *used_mode, st->lspSt.lsp_old, st->lspSt.lsp_old_q, st->lspSt.
          qSt.past_rq, A_t, Aq_t, lsp_new, &ana );
 
    /* Buffer lsp's and energy */
-   dtx_buffer( &st->dtxEncSt->hist_ptr, st->dtxEncSt->lsp_hist, lsp_new, st->
-         new_speech, st->dtxEncSt->log_en_hist );
+   dtx_buffer( &st->dtxEncSt.hist_ptr, st->dtxEncSt.lsp_hist, lsp_new, st->
+         new_speech, st->dtxEncSt.log_en_hist );
 
    if ( *used_mode == MRDTX ) {
-      dtx_enc( &st->dtxEncSt->log_en_index, st->dtxEncSt->log_en_hist, st->
-            dtxEncSt->lsp_hist, st->dtxEncSt->lsp_index, &st->dtxEncSt->
-            init_lsf_vq_index, compute_sid_flag, &st->lspSt->qSt.past_rq[0], st
-            ->gainQuantSt->gc_predSt->past_qua_en, &ana );
+      dtx_enc( &st->dtxEncSt.log_en_index, st->dtxEncSt.log_en_hist, st->
+            dtxEncSt.lsp_hist, st->dtxEncSt.lsp_index, &st->dtxEncSt.
+            init_lsf_vq_index, compute_sid_flag, &st->lspSt.qSt.past_rq[0], st
+            ->gainQuantSt.gc_predSt.past_qua_en, &ana );
       memset( st->old_exc, 0, ( PIT_MAX + L_INTERPOL )<<2 );
       memset( st->mem_w0, 0, M <<2 );
       memset( st->mem_err, 0, M <<2 );
       memset( st->zero, 0, L_SUBFR <<2 );
       memset( st->hvec, 0, L_SUBFR <<2 );
-      memset( st->lspSt->qSt.past_rq, 0, M <<2 );
-      memcpy( st->lspSt->lsp_old, lsp_new, M <<2 );
-      memcpy( st->lspSt->lsp_old_q, lsp_new, M <<2 );
+      memset( st->lspSt.qSt.past_rq, 0, M <<2 );
+      memcpy( st->lspSt.lsp_old, lsp_new, M <<2 );
+      memcpy( st->lspSt.lsp_old_q, lsp_new, M <<2 );
 
       /* Reset clLtp states */
-      st->clLtpSt->pitchSt->T0_prev_subframe = 0;
+      st->clLtpSt.pitchSt.T0_prev_subframe = 0;
       st->sharp = 0;
    }
    else {
       /* check resonance in the filter */
-      lsp_flag = check_lsp( &st->tonStabSt->count, st->lspSt->lsp_old );
+      lsp_flag = check_lsp( &st->tonStabSt.count, st->lspSt.lsp_old );
    }
 
 #ifdef VAD2
@@ -10559,8 +10559,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       /* Find open loop pitch lag for two subframes */
       if ( ( mode != MR475 ) && ( mode != MR515 ) ) {
          ol_ltp( mode, &st->vadSt, &st->wsp[i_subfr], &T_op[subfrNr], st->
-               ol_gain_flg, &st->pitchOLWghtSt->old_T0_med, &st->pitchOLWghtSt->
-               wght_flg, &st->pitchOLWghtSt->ada_w, st->old_lags, st->dtx,
+               ol_gain_flg, &st->pitchOLWghtSt.old_T0_med, &st->pitchOLWghtSt.
+               wght_flg, &st->pitchOLWghtSt.ada_w, st->old_lags, st->dtx,
                subfrNr );
       }
    }
@@ -10571,8 +10571,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
        * search on 160 samples
        */
       ol_ltp( mode, &st->vadSt, &st->wsp[0], &T_op[0], st->ol_gain_flg, &st->
-            pitchOLWghtSt->old_T0_med, &st->pitchOLWghtSt->wght_flg, &st->
-            pitchOLWghtSt->ada_w, st->old_lags, st->dtx, 1 );
+            pitchOLWghtSt.old_T0_med, &st->pitchOLWghtSt.wght_flg, &st->
+            pitchOLWghtSt.ada_w, st->old_lags, st->dtx, 1 );
       T_op[1] = T_op[0];
    }
 
@@ -10652,7 +10652,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       memcpy( res2, res, L_SUBFR <<2 );
 
       /* Closed-loop LTP search */
-      cl_ltp( &st->clLtpSt->pitchSt->T0_prev_subframe, st->tonStabSt->gp, *
+      cl_ltp( &st->clLtpSt.pitchSt.T0_prev_subframe, st->tonStabSt.gp, *
             used_mode, i_subfr, T_op, st->h1, &st->exc[i_subfr], res2, xn,
             lsp_flag, xn2, y1, &T0, &T0_frac, &gain_pit, gCoeff, &ana, &gp_limit
             );
@@ -10671,21 +10671,21 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
             y2, res2, &ana );
 
       /* Quantization of gains. */
-      gainQuant( *used_mode, evenSubfr, st->gainQuantSt->gc_predSt->past_qua_en,
-            st->gainQuantSt->gc_predUncSt->past_qua_en, st->gainQuantSt->
-            sf0_coeff, &st->gainQuantSt->sf0_target_en, &st->gainQuantSt->
-            sf0_gcode0_exp, &st->gainQuantSt->
-            sf0_gcode0_fra, &st->gainQuantSt->gain_idx_ptr, &gain_pit_sf0, &
+      gainQuant( *used_mode, evenSubfr, st->gainQuantSt.gc_predSt.past_qua_en,
+            st->gainQuantSt.gc_predUncSt.past_qua_en, st->gainQuantSt.
+            sf0_coeff, &st->gainQuantSt.sf0_target_en, &st->gainQuantSt.
+            sf0_gcode0_exp, &st->gainQuantSt.
+            sf0_gcode0_fra, &st->gainQuantSt.gain_idx_ptr, &gain_pit_sf0, &
             gain_code_sf0, res, &st->exc[i_subfr], code, xn, xn2, y1, y2, gCoeff
-            , gp_limit, &gain_pit, &gain_code, &st->gainQuantSt->adaptSt->
-            prev_gc, &st->gainQuantSt->adaptSt->onset, st->gainQuantSt->adaptSt
-            ->ltpg_mem, &st->gainQuantSt->adaptSt->prev_alpha, &ana );
+            , gp_limit, &gain_pit, &gain_code, &st->gainQuantSt.adaptSt.
+            prev_gc, &st->gainQuantSt.adaptSt.onset, st->gainQuantSt.adaptSt
+            .ltpg_mem, &st->gainQuantSt.adaptSt.prev_alpha, &ana );
 
       /* update gain history */
       for ( i = 0; i < N_FRAME - 1; i++ ) {
-         st->tonStabSt->gp[i] = st->tonStabSt->gp[i + 1];
+         st->tonStabSt.gp[i] = st->tonStabSt.gp[i + 1];
       }
-      st->tonStabSt->gp[N_FRAME - 1] = gain_pit;
+      st->tonStabSt.gp[N_FRAME - 1] = gain_pit;
 
       /* Subframe Post Processing */
       if ( *used_mode != MR475 ) {
@@ -10887,43 +10887,42 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->dtx = dtx;
 
    /* reset Pitch_frState */
-   s->clLtpSt->pitchSt->T0_prev_subframe = 0;
+   s->clLtpSt.pitchSt.T0_prev_subframe = 0;
 
    /* reset Q_plsfState */
-   memset( s->lspSt->qSt.past_rq, 0, sizeof( Float32 )*M );
-   memcpy( s->lspSt->lsp_old, lsp_init_data, sizeof( lsp_init_data ) );
-   memcpy( s->lspSt->lsp_old_q, lsp_init_data, sizeof( lsp_init_data ) );
+   memset( s->lspSt.qSt.past_rq, 0, sizeof( Float32 )*M );
+   memcpy( s->lspSt.lsp_old, lsp_init_data, sizeof( lsp_init_data ) );
+   memcpy( s->lspSt.lsp_old_q, lsp_init_data, sizeof( lsp_init_data ) );
 
    /* reset gc_predState */
    for ( i = 0; i < NPRED; i++ ) {
-      s->gainQuantSt->gc_predSt->past_qua_en[i] = NB_QUA_CODE+VQ_SIZE_HIGHRATES+VQ_SIZE_LOWRATES+MR475_VQ_SIZE*2+DTX_VQ_SIZE;
-      s->gainQuantSt->gc_predUncSt->past_qua_en[i] = NB_QUA_CODE+VQ_SIZE_HIGHRATES+VQ_SIZE_LOWRATES+MR475_VQ_SIZE*2+DTX_VQ_SIZE;
+      s->gainQuantSt.gc_predSt.past_qua_en[i] = NB_QUA_CODE+VQ_SIZE_HIGHRATES+VQ_SIZE_LOWRATES+MR475_VQ_SIZE*2+DTX_VQ_SIZE;
+      s->gainQuantSt.gc_predUncSt.past_qua_en[i] = NB_QUA_CODE+VQ_SIZE_HIGHRATES+VQ_SIZE_LOWRATES+MR475_VQ_SIZE*2+DTX_VQ_SIZE;
    }
 
    /* reset gain_adaptState */
-   s->gainQuantSt->adaptSt->onset = 0;
-   s->gainQuantSt->adaptSt->prev_alpha = 0.0F;
-   s->gainQuantSt->adaptSt->prev_gc = 0.0F;
-   memset( s->gainQuantSt->adaptSt->ltpg_mem, 0, sizeof( Float32 )*LTPG_MEM_SIZE
-         );
-   s->gainQuantSt->sf0_gcode0_exp = 0;
-   s->gainQuantSt->sf0_gcode0_fra = 0;
-   s->gainQuantSt->sf0_target_en = 0.0F;
-   memset( s->gainQuantSt->sf0_coeff, 0, sizeof( Float32 )*5 );
-   s->gainQuantSt->gain_idx_ptr = NULL;
+   s->gainQuantSt.adaptSt.onset = 0;
+   s->gainQuantSt.adaptSt.prev_alpha = 0.0F;
+   s->gainQuantSt.adaptSt.prev_gc = 0.0F;
+   memset(s->gainQuantSt.adaptSt.ltpg_mem, 0, sizeof( Float32 )*LTPG_MEM_SIZE);
+   s->gainQuantSt.sf0_gcode0_exp = 0;
+   s->gainQuantSt.sf0_gcode0_fra = 0;
+   s->gainQuantSt.sf0_target_en = 0.0F;
+   memset( s->gainQuantSt.sf0_coeff, 0, sizeof( Float32 )*5 );
+   s->gainQuantSt.gain_idx_ptr = NULL;
 
    /* reset pitchOLWghtState */
-   s->pitchOLWghtSt->old_T0_med = 40;
-   s->pitchOLWghtSt->ada_w = 0.0F;
-   s->pitchOLWghtSt->wght_flg = 0;
+   s->pitchOLWghtSt.old_T0_med = 40;
+   s->pitchOLWghtSt.ada_w = 0.0F;
+   s->pitchOLWghtSt.wght_flg = 0;
 
    /* reset tonStabState */
-   s->tonStabSt->count = 0;
-   memset( s->tonStabSt->gp, 0, sizeof( Float32 )*N_FRAME );
+   s->tonStabSt.count = 0;
+   memset( s->tonStabSt.gp, 0, sizeof( Float32 )*N_FRAME );
 
    /* reset LevinsonState */
-   s->lpcSt->LevinsonSt->old_A[0] = 1.0F;
-   memset( &s->lpcSt->LevinsonSt->old_A[1], 0, sizeof( Float32 )*M );
+   s->lpcSt.LevinsonSt.old_A[0] = 1.0F;
+   memset( &s->lpcSt.LevinsonSt.old_A[1], 0, sizeof( Float32 )*M );
 
 #ifdef VAD2
    /* reset vadState */
@@ -10985,20 +10984,20 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->vadSt.corr_hp_fast = CVAD_LOWPOW_RESET;
 #endif
 
-   s->dtxEncSt->hist_ptr = 0;
-   s->dtxEncSt->log_en_index = 0;
-   s->dtxEncSt->init_lsf_vq_index = 0;
-   s->dtxEncSt->lsp_index[0] = 0;
-   s->dtxEncSt->lsp_index[1] = 0;
-   s->dtxEncSt->lsp_index[2] = 0;
+   s->dtxEncSt.hist_ptr = 0;
+   s->dtxEncSt.log_en_index = 0;
+   s->dtxEncSt.init_lsf_vq_index = 0;
+   s->dtxEncSt.lsp_index[0] = 0;
+   s->dtxEncSt.lsp_index[1] = 0;
+   s->dtxEncSt.lsp_index[2] = 0;
 
    for ( i = 0; i < DTX_HIST_SIZE; i++ ) {
-      memcpy( &s->dtxEncSt->lsp_hist[i * M], lsp_init_data, sizeof( Float32 )*M
+      memcpy( &s->dtxEncSt.lsp_hist[i * M], lsp_init_data, sizeof( Float32 )*M
             );
    }
-   memset( s->dtxEncSt->log_en_hist, 0, M * sizeof( Float32 ) );
-   s->dtxEncSt->dtxHangoverCount = DTX_HANG_CONST;
-   s->dtxEncSt->decAnaElapsedCount = DTX_ELAPSED_FRAMES_THRESH;
+   memset( s->dtxEncSt.log_en_hist, 0, M * sizeof( Float32 ) );
+   s->dtxEncSt.dtxHangoverCount = DTX_HANG_CONST;
+   s->dtxEncSt.decAnaElapsedCount = DTX_ELAPSED_FRAMES_THRESH;
 
    /* init speech pointers */
    /* New speech */
@@ -11050,137 +11049,11 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
  * Returns:
  *    succeed = 0
  */
-static Word32 cod_amr_init( cod_amrState **state, Word32 dtx )
+static Word32 cod_amr_init( cod_amrState *state, Word32 dtx )
 {
-   cod_amrState * s;
-
-   if ( ( s = ( cod_amrState * ) malloc( sizeof( cod_amrState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init clLtpState */
-   if ( ( s->clLtpSt = ( clLtpState * ) malloc( sizeof( clLtpState ) ) ) == NULL
-         ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init Pitch_frState */
-   if ( ( s->clLtpSt->pitchSt = ( Pitch_frState * ) malloc( sizeof(
-         Pitch_frState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init lspState */
-   if ( ( s->lspSt = ( lspState * ) malloc( sizeof( lspState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init gainQuantState */
-   if ( ( s->gainQuantSt = ( gainQuantState * ) malloc( sizeof( gainQuantState )
-         ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init gc_predState x2 */
-   if ( ( s->gainQuantSt->gc_predSt = ( gc_predState * ) malloc( sizeof(
-         gc_predState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   if ( ( s->gainQuantSt->gc_predUncSt = ( gc_predState * ) malloc( sizeof(
-         gc_predState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init gain_adaptState */
-   if ( ( s->gainQuantSt->adaptSt = ( gain_adaptState * ) malloc( sizeof(
-         gain_adaptState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init pitchOLWghtState */
-   if ( ( s->pitchOLWghtSt = ( pitchOLWghtState * ) malloc( sizeof(
-         pitchOLWghtState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init tonStabState */
-   if ( ( s->tonStabSt = ( tonStabState * ) malloc( sizeof( tonStabState ) ) )
-         == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init lpcState */
-   if ( ( s->lpcSt = ( lpcState * ) malloc( sizeof( lpcState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* init LevinsonState */
-   if ( ( s->lpcSt->LevinsonSt = ( LevinsonState * ) malloc( sizeof(
-         LevinsonState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* Init dtx_encState */
-   if ( ( s->dtxEncSt = ( dtx_encState * ) malloc( sizeof( dtx_encState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-   cod_amr_reset( s, dtx );
-   *state = s;
+   cod_amr_reset(state, dtx );
    return 0;
 }
-
-
-/*
- * cod_amr_exit
- *
- *
- * Parameters:
- *    state             I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-static void cod_amr_exit( cod_amrState **state )
-{
-   if ( state == NULL || *state == NULL )
-      return;
-
-   /* deallocate memory */
-   free( ( *state )->gainQuantSt->gc_predSt );
-   free( ( *state )->gainQuantSt->gc_predUncSt );
-   free( ( *state )->gainQuantSt->adaptSt );
-   free( ( *state )->clLtpSt->pitchSt );
-   free( ( *state )->lpcSt->LevinsonSt );
-   free( ( *state )->lpcSt );
-   free( ( *state )->lspSt );
-   free( ( *state )->clLtpSt );
-   free( ( *state )->gainQuantSt );
-   free( ( *state )->pitchOLWghtSt );
-   free( ( *state )->tonStabSt );
-   free( ( *state )->dtxEncSt );
-   free( *state );
-   *state = NULL;
-   return;
-}
-
 
 /*
  * Speech_Encode_Frame_init
@@ -11207,8 +11080,6 @@ void * Speech_Encode_Frame_init( int dtx )
             "structure\n" );
       return NULL;
    }
-   //s->pre_state = NULL;
-   s->cod_amr_state = NULL;
    s->dtx = dtx;
 
    if ( Pre_Process_init( &s->pre_state ) || cod_amr_init( &s->cod_amr_state,
@@ -11235,15 +11106,10 @@ void * Speech_Encode_Frame_init( int dtx )
  */
 int Speech_Encode_Frame_reset( void *st, int dtx )
 {
-   Speech_Encode_FrameState * state;
-   state = ( Speech_Encode_FrameState * )st;
+   Speech_Encode_FrameState* state = (Speech_Encode_FrameState*)st;
 
-   if ( ( Speech_Encode_FrameState * )state == NULL ) {
-      fprintf( stderr, "Speech_Encode_Frame_reset: invalid parameter\n" );
-      return-1;
-   }
    Pre_Process_reset( &state->pre_state );
-   cod_amr_reset( state->cod_amr_state, dtx );
+   cod_amr_reset( &state->cod_amr_state, dtx );
    return 0;
 }
 
@@ -11265,8 +11131,6 @@ void Speech_Encode_Frame_exit( void **st )
 {
    if ( ( Speech_Encode_FrameState * )( *st ) == NULL )
       return;
-   cod_amr_exit( &( ( ( Speech_Encode_FrameState * )( *st ) )->cod_amr_state ) )
-   ;
 
    /* deallocate memory */
    free( *st );
@@ -11311,6 +11175,6 @@ void Speech_Encode_Frame( void *st, enum Mode mode, Word16 *new_speech, Word16 *
          .x0, &state->pre_state.x1, new_speech, speech );
 
    /* Call the speech encoder */
-   cod_amr( state->cod_amr_state, mode, speech, prm, used_mode, syn );
+   cod_amr( &state->cod_amr_state, mode, speech, prm, used_mode, syn );
 
 }
