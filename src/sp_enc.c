@@ -312,7 +312,7 @@ typedef struct
 typedef struct
 {
    cod_amrState * cod_amr_state;
-   Pre_ProcessState * pre_state;
+   Pre_ProcessState pre_state;
 
    Word32 dtx;
 
@@ -10779,10 +10779,6 @@ the_end:
  */
 static Word32 Pre_Process_reset( Pre_ProcessState *state )
 {
-   if ( state == ( Pre_ProcessState * )NULL ) {
-      fprintf( stderr, "Pre_Process_reset: invalid parameter\n" );
-      return-1;
-   }
    state->y2 = 0;
    state->y1 = 0;
    state->x0 = 0;
@@ -10791,29 +10787,6 @@ static Word32 Pre_Process_reset( Pre_ProcessState *state )
 }
 
 
-/*
- * Pre_Process_exit
- *
- *
- * Parameters:
- *    state             I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-static void Pre_Process_exit( Pre_ProcessState **state )
-{
-   if ( state == NULL || *state == NULL )
-      return;
-
-   /* deallocate memory */
-   free( *state );
-   *state = NULL;
-   return;
-}
 
 
 /*
@@ -10829,24 +10802,9 @@ static void Pre_Process_exit( Pre_ProcessState **state )
  * Returns:
  *    succeed = 0
  */
-static Word32 Pre_Process_init( Pre_ProcessState **state )
+static Word32 Pre_Process_init( Pre_ProcessState *state )
 {
-   Pre_ProcessState * s;
-
-   if ( state == ( Pre_ProcessState * * )NULL ) {
-      fprintf( stderr, "Pre_Process_init: invalid parameter\n" );
-      return-1;
-   }
-   *state = NULL;
-
-   /* allocate memory */
-   if ( ( s = ( Pre_ProcessState * ) malloc( sizeof( Pre_ProcessState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "Pre_Process_init: can not malloc state structure\n" );
-      return-1;
-   }
-   Pre_Process_reset( s );
-   *state = s;
+   Pre_Process_reset( state );
    return 0;
 }
 
@@ -11263,7 +11221,7 @@ void * Speech_Encode_Frame_init( int dtx )
             "structure\n" );
       return NULL;
    }
-   s->pre_state = NULL;
+   //s->pre_state = NULL;
    s->cod_amr_state = NULL;
    s->dtx = dtx;
 
@@ -11298,7 +11256,7 @@ int Speech_Encode_Frame_reset( void *st, int dtx )
       fprintf( stderr, "Speech_Encode_Frame_reset: invalid parameter\n" );
       return-1;
    }
-   Pre_Process_reset( state->pre_state );
+   Pre_Process_reset( &state->pre_state );
    cod_amr_reset( state->cod_amr_state, dtx );
    return 0;
 }
@@ -11321,8 +11279,6 @@ void Speech_Encode_Frame_exit( void **st )
 {
    if ( ( Speech_Encode_FrameState * )( *st ) == NULL )
       return;
-   Pre_Process_exit( &( ( ( Speech_Encode_FrameState * )( *st ) )->pre_state ) )
-   ;
    cod_amr_exit( &( ( ( Speech_Encode_FrameState * )( *st ) )->cod_amr_state ) )
    ;
 
@@ -11365,8 +11321,8 @@ void Speech_Encode_Frame( void *st, enum Mode mode, Word16 *new_speech, Word16 *
    }
 
    /* filter + downscaling */
-   Pre_Process( &state->pre_state->y2, &state->pre_state->y1, &state->pre_state
-         ->x0, &state->pre_state->x1, new_speech, speech );
+   Pre_Process( &state->pre_state.y2, &state->pre_state.y1, &state->pre_state
+         .x0, &state->pre_state.x1, new_speech, speech );
 
    /* Call the speech encoder */
    cod_amr( state->cod_amr_state, mode, speech, prm, used_mode, syn );

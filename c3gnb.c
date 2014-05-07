@@ -45,7 +45,7 @@ int main() {
     if (NULL == pcm_back) exit(1);
     fwrite(AMR_MAGIC_NUMBER, sizeof(char), strlen(AMR_MAGIC_NUMBER), amrnb);
     srand(0);
-    for (i=0; i < 1024; i++) {
+    for (i=0; i < 10240; i++) {
         int req_mode = 7;
         short speech[160];
         for (j = 0; j < 160; j++) {
