@@ -27,53 +27,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include "sp_enc.h"
+#include "interf_enc.h"
 #include "interf_rom.h"
 
-/*
- * Declare structure types
- */
-/* Declaration transmitted frame types */
-enum TXFrameType { TX_SPEECH_GOOD = 0,
-                   TX_SID_FIRST,
-                   TX_SID_UPDATE,
-                   TX_NO_DATA,
-                   TX_SPEECH_DEGRADED,
-                   TX_SPEECH_BAD,
-                   TX_SID_BAD,
-                   TX_ONSET,
-                   TX_N_FRAMETYPES     /* number of frame types */
-};
-
-/* Declaration of interface structure */
-typedef struct
-{
-   Word16 sid_update_counter;   /* Number of frames since last SID */
-   Word16 sid_handover_debt;   /* Number of extra SID_UPD frames to schedule */
-   Word32 dtx;
-   enum TXFrameType prev_ft;   /* Type of the previous frame */
-   void *encoderState;   /* Points encoder state structure */
-} enc_interface_State;
-
-
-/*
- * EncoderMMS
- *
- *
- * Parameters:
- *    mode                 I: AMR mode
- *    param                I: Encoder output parameters
- *    stream               O: packed speech frame
- *    frame_type           I: frame type (DTX)
- *    speech_mode          I: speech mode (DTX)
- *
- * Function:
- *    Pack encoder output parameters to octet structure according
- *    importance table and AMR file storage format according to
- *    RFC 3267.
- * Returns:
- *    number of octets
- */
 static int EncoderMMS( enum Mode mode, Word16 *param, UWord8 *stream, enum
       TXFrameType frame_type, enum Mode speech_mode )
 {
@@ -275,11 +231,8 @@ static void Sid_Sync_reset( enc_interface_State *st )
  * Returns:
  *    number of octets
  */
-int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
-
+int Encoder_Interface_Encode(enc_interface_State* state, enum Mode mode, Word16 *speech,
       UWord8 *serial,
-
-
       int force_speech )
 {
    Word16 prm[PRMNO_MR122];   /* speech parameters, max size */
@@ -287,7 +240,6 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
    Word16 homing_size;   /* frame size for homing frame */
 
 
-   enc_interface_State * s;
    enum TXFrameType txFrameType;   /* frame type */
 
    int i, noHoming = 0;
@@ -298,9 +250,6 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
     * if used_mode == -1, force VAD on
     */
    enum Mode used_mode = -force_speech;
-
-
-   s = ( enc_interface_State * )st;
 
     /*
      * Checks if all samples of the input frame matches the encoder
@@ -314,7 +263,7 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
    }
 
    if (noHoming){
-      Speech_Encode_Frame( s->encoderState, mode, speech, prm, &used_mode );
+      Speech_Encode_Frame( &state->encoderState, mode, speech, prm, &used_mode );
    }
    else {
       switch ( mode ) {
@@ -371,26 +320,26 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
       used_mode = mode;
    }
    if ( used_mode == MRDTX ) {
-      s->sid_update_counter--;
+      state->sid_update_counter--;
 
-      if ( s->prev_ft == TX_SPEECH_GOOD ) {
+      if ( state->prev_ft == TX_SPEECH_GOOD ) {
          txFrameType = TX_SID_FIRST;
-         s->sid_update_counter = 3;
+         state->sid_update_counter = 3;
       }
       else {
          /* TX_SID_UPDATE or TX_NO_DATA */
-         if ( ( s->sid_handover_debt > 0 ) && ( s->sid_update_counter > 2 ) ) {
+         if ( ( state->sid_handover_debt > 0 ) && ( state->sid_update_counter > 2 ) ) {
               /*
                * ensure extra updates are properly delayed after
                * a possible SID_FIRST
                */
             txFrameType = TX_SID_UPDATE;
-            s->sid_handover_debt--;
+            state->sid_handover_debt--;
          }
          else {
-            if ( s->sid_update_counter == 0 ) {
+            if ( state->sid_update_counter == 0 ) {
                txFrameType = TX_SID_UPDATE;
-               s->sid_update_counter = 8;
+               state->sid_update_counter = 8;
             }
             else {
                txFrameType = TX_NO_DATA;
@@ -400,14 +349,14 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
       }
    }
    else {
-      s->sid_update_counter = 8;
+      state->sid_update_counter = 8;
       txFrameType = TX_SPEECH_GOOD;
    }
-   s->prev_ft = txFrameType;
+   state->prev_ft = txFrameType;
 
    if ( noHoming == 0 ) {
-      Speech_Encode_Frame_reset( s->encoderState, s->dtx );
-      Sid_Sync_reset( s );
+      Speech_Encode_Frame_reset( &state->encoderState, state->dtx );
+      Sid_Sync_reset(state);
    }
 
    return EncoderMMS( used_mode, prm, serial, txFrameType, mode );
@@ -419,6 +368,7 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
  *
  *
  * Parameters:
+ *    state             I: pointer to state structure
  *    dtx               I: DTX flag
  *
  * Function:
@@ -427,44 +377,11 @@ int Encoder_Interface_Encode( void *st, enum Mode mode, Word16 *speech,
  * Returns:
  *    pointer to encoder interface structure
  */
-void * Encoder_Interface_init( int dtx )
+void Encoder_Interface_init(enc_interface_State* state, int dtx)
 {
-   enc_interface_State * s;
-
-   /* allocate memory */
-   if ( ( s = ( enc_interface_State * ) malloc( sizeof( enc_interface_State ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "Encoder_Interface_init: "
-            "can not malloc state structure\n" );
-      return NULL;
-   }
-   s->encoderState = Speech_Encode_Frame_init( dtx );
-   Sid_Sync_reset( s );
-   s->dtx = dtx;
-   return s;
+   Speech_Encode_Frame_init(&state->encoderState, dtx);
+   Sid_Sync_reset(state);
+   state->dtx = dtx;
+   return;
 }
 
-
-/*
- * DecoderInterfaceExit
- *
- *
- * Parameters:
- *    state             I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-void Encoder_Interface_exit( void *state )
-{
-   enc_interface_State * s;
-   s = ( enc_interface_State * )state;
-
-   /* free memory */
-   Speech_Encode_Frame_exit( &s->encoderState );
-   free( s );
-   state = NULL;
-}

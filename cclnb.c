@@ -34,7 +34,8 @@ int main() {
         }
     }
     int dtx = 0;
-    void* enstate = Encoder_Interface_init(dtx);
+    enc_interface_State enstate;
+    Encoder_Interface_init(&enstate, dtx);
     void* destate = Decoder_Interface_init();
 
     FILE* pcm_orig = fopen("cclnb.orig", "wb");
@@ -53,7 +54,7 @@ int main() {
         }
         fwrite(speech, sizeof(short int), 160, pcm_orig);
         unsigned char serial_data[32];
-        int byte_counter = Encoder_Interface_Encode(enstate, req_mode, speech, serial_data, 0);
+        int byte_counter = Encoder_Interface_Encode(&enstate, req_mode, speech, serial_data, 0);
         fwrite(serial_data, sizeof(char), byte_counter, amrnb);
         /*printf("test times: %d, bytes: %d\n", i, byte_counter);*/
         enum Mode dec_mode = (serial_data[0] >> 3) & 0x000F;
@@ -62,7 +63,7 @@ int main() {
         fwrite(speech, sizeof(short int), 160, pcm_back);
         /*printf("test times: %d, bytes: %d\n", i, read_size);*/
     }
-    Encoder_Interface_exit(enstate);
+    //Encoder_Interface_exit(enstate);
     Decoder_Interface_exit(destate);
     fclose(pcm_orig);
     fclose(amrnb);
