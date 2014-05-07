@@ -295,7 +295,7 @@ typedef struct
    gainQuantState * gainQuantSt;
    pitchOLWghtState * pitchOLWghtSt;
    tonStabState * tonStabSt;
-   vadState * vadSt;
+   vadState vadSt;
 
    Word32 dtx;
 
@@ -10472,11 +10472,11 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
    if ( st->dtx ) {
 #ifdef VAD2
      /* Find VAD decision (option 2) */
-     vad_flag = vad2 (st->vadSt, st->new_speech);
-     vad_flag = vad2 (st->vadSt, st->new_speech+80) || vad_flag;
+     vad_flag = vad2 (&st->vadSt, st->new_speech);
+     vad_flag = vad2 (&st->vadSt, st->new_speech+80) || vad_flag;
 #else
       /* Find VAD decision (option 1) */
-      vad_flag = vad( st->vadSt, st->new_speech );
+      vad_flag = vad( &st->vadSt, st->new_speech );
 #endif
       /* force VAD on   */
       if ( *used_mode < 0 )
@@ -10542,8 +10542,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
 #ifdef VAD2
    if (st->dtx) {
-      st->vadSt->Rmax = 0.0;
-      st->vadSt->R0 = 0.0;
+      st->vadSt.Rmax = 0.0;
+      st->vadSt.R0 = 0.0;
    }
 #endif
 
@@ -10558,7 +10558,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
       /* Find open loop pitch lag for two subframes */
       if ( ( mode != MR475 ) && ( mode != MR515 ) ) {
-         ol_ltp( mode, st->vadSt, &st->wsp[i_subfr], &T_op[subfrNr], st->
+         ol_ltp( mode, &st->vadSt, &st->wsp[i_subfr], &T_op[subfrNr], st->
                ol_gain_flg, &st->pitchOLWghtSt->old_T0_med, &st->pitchOLWghtSt->
                wght_flg, &st->pitchOLWghtSt->ada_w, st->old_lags, st->dtx,
                subfrNr );
@@ -10570,7 +10570,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
        * Find open loop pitch lag for ONE FRAME ONLY
        * search on 160 samples
        */
-      ol_ltp( mode, st->vadSt, &st->wsp[0], &T_op[0], st->ol_gain_flg, &st->
+      ol_ltp( mode, &st->vadSt, &st->wsp[0], &T_op[0], st->ol_gain_flg, &st->
             pitchOLWghtSt->old_T0_med, &st->pitchOLWghtSt->wght_flg, &st->
             pitchOLWghtSt->ada_w, st->old_lags, st->dtx, 1 );
       T_op[1] = T_op[0];
@@ -10578,13 +10578,13 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
 #ifdef VAD2
    if (st->dtx) {
-      LTP_flag_update(st->vadSt, mode);
+      LTP_flag_update(&st->vadSt, mode);
    }
 #endif
 
 #ifndef VAD2
    if ( st->dtx ) {
-      vad_pitch_detection( st->vadSt, T_op );
+      vad_pitch_detection( &st->vadSt, T_op );
    }
 #endif
 
@@ -10927,62 +10927,62 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
 
 #ifdef VAD2
    /* reset vadState */
-   s->vadSt->pre_emp_mem = 0.0;
-   s->vadSt->update_cnt = 0;
-   s->vadSt->hyster_cnt = 0;
-   s->vadSt->last_update_cnt = 0;
+   s->vadSt.pre_emp_mem = 0.0;
+   s->vadSt.update_cnt = 0;
+   s->vadSt.hyster_cnt = 0;
+   s->vadSt.last_update_cnt = 0;
    for ( i = 0; i < NUM_CHAN; i++ ) {
-     s->vadSt->ch_enrg_long_db[i] = 0.0;
-     s->vadSt->ch_enrg[i] = 0.0;
-     s->vadSt->ch_noise[i] = 0.0;
+     s->vadSt.ch_enrg_long_db[i] = 0.0;
+     s->vadSt.ch_enrg[i] = 0.0;
+     s->vadSt.ch_noise[i] = 0.0;
    }
-   s->vadSt->Lframe_cnt = 0L;
-   s->vadSt->tsnr = 0.0;
-   s->vadSt->hangover = 0;
-   s->vadSt->burstcount = 0;
-   s->vadSt->fupdate_flag = 0;
-   s->vadSt->negSNRvar = 0.0;
-   s->vadSt->negSNRbias = 0.0;
-   s->vadSt->R0 = 0.0;
-   s->vadSt->Rmax = 0.0;
-   s->vadSt->LTP_flag = 0;
+   s->vadSt.Lframe_cnt = 0L;
+   s->vadSt.tsnr = 0.0;
+   s->vadSt.hangover = 0;
+   s->vadSt.burstcount = 0;
+   s->vadSt.fupdate_flag = 0;
+   s->vadSt.negSNRvar = 0.0;
+   s->vadSt.negSNRbias = 0.0;
+   s->vadSt.R0 = 0.0;
+   s->vadSt.Rmax = 0.0;
+   s->vadSt.LTP_flag = 0;
 #else
    /* reset vadState */
-   s->vadSt->oldlag_count = 0;
-   s->vadSt->oldlag = 0;
-   s->vadSt->pitch = 0;
-   s->vadSt->tone = 0;
-   s->vadSt->complex_high = 0;
-   s->vadSt->complex_low = 0;
-   s->vadSt->complex_hang_timer = 0;
-   s->vadSt->vadreg = 0;
-   s->vadSt->burst_count = 0;
-   s->vadSt->hang_count = 0;
-   s->vadSt->complex_hang_count = 0;
+   s->vadSt.oldlag_count = 0;
+   s->vadSt.oldlag = 0;
+   s->vadSt.pitch = 0;
+   s->vadSt.tone = 0;
+   s->vadSt.complex_high = 0;
+   s->vadSt.complex_low = 0;
+   s->vadSt.complex_hang_timer = 0;
+   s->vadSt.vadreg = 0;
+   s->vadSt.burst_count = 0;
+   s->vadSt.hang_count = 0;
+   s->vadSt.complex_hang_count = 0;
 
    /* initialize memory used by the filter bank */
    for ( i = 0; i < 3; i++ ) {
-      s->vadSt->a_data5[i][0] = 0;
-      s->vadSt->a_data5[i][1] = 0;
+      s->vadSt.a_data5[i][0] = 0;
+      s->vadSt.a_data5[i][1] = 0;
    }
 
    for ( i = 0; i < 5; i++ ) {
-      s->vadSt->a_data3[i] = 0;
+      s->vadSt.a_data3[i] = 0;
    }
 
    /* reset dtx_encState */
    /* initialize the rest of the memory */
    for ( i = 0; i < COMPLEN; i++ ) {
-      s->vadSt->bckr_est[i] = NOISE_INIT;
-      s->vadSt->old_level[i] = NOISE_INIT;
-      s->vadSt->ave_level[i] = NOISE_INIT;
-      s->vadSt->sub_level[i] = 0;
+      s->vadSt.bckr_est[i] = NOISE_INIT;
+      s->vadSt.old_level[i] = NOISE_INIT;
+      s->vadSt.ave_level[i] = NOISE_INIT;
+      s->vadSt.sub_level[i] = 0;
    }
-   s->vadSt->best_corr_hp = CVAD_LOWPOW_RESET;
-   s->vadSt->speech_vad_decision = 0;
-   s->vadSt->complex_warning = 0;
-   s->vadSt->sp_burst_count = 0;
-   s->vadSt->corr_hp_fast = CVAD_LOWPOW_RESET;
+   s->vadSt.best_corr_hp = CVAD_LOWPOW_RESET;
+   s->vadSt.speech_vad_decision = 0;
+   s->vadSt.complex_warning = 0;
+   s->vadSt.sp_burst_count = 0;
+   s->vadSt.corr_hp_fast = CVAD_LOWPOW_RESET;
 #endif
 
    s->dtxEncSt->hist_ptr = 0;
@@ -11140,11 +11140,6 @@ static Word32 cod_amr_init( cod_amrState **state, Word32 dtx )
       return-1;
    }
 
-   if ( ( s->vadSt = ( vadState * ) malloc( sizeof( vadState ) ) ) == NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
    /* Init dtx_encState */
    if ( ( s->dtxEncSt = ( dtx_encState * ) malloc( sizeof( dtx_encState ) ) ) ==
          NULL ) {
@@ -11176,7 +11171,6 @@ static void cod_amr_exit( cod_amrState **state )
       return;
 
    /* deallocate memory */
-   free( ( *state )->vadSt );
    free( ( *state )->gainQuantSt->gc_predSt );
    free( ( *state )->gainQuantSt->gc_predUncSt );
    free( ( *state )->gainQuantSt->adaptSt );

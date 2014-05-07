@@ -8,7 +8,7 @@ AMRWBDIR = 3gpp-amrwb/src
 
 CLAMRDIR = src
 
-CFLAGS = -O3 -Wall
+CFLAGS = -O3 -Wall #-DVAD2
 CFLAGS_3GPPNB = -std=c89 $(CFLAGS) -I$(AMRNBDIR)
 CFLAGS_CLAMR  = -std=c99 $(CFLAGS) -I$(CLAMRDIR)
 
