@@ -42,7 +42,7 @@ ALL_OBJS=$(AMRNB_OBJS) $(AMRWB_OBJS) $(CLAMR_OBJS)
 
 all: $(ALL_OBJS) c3gnb.o cclnb.o
 
-check: c3gnb cclnb
+check: clean c3gnb cclnb
 	./c3gnb
 	./cclnb
 	md5sum *.orig

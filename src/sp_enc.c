@@ -243,7 +243,7 @@ typedef struct
 
 
    /* Quantization state */
-   Q_plsfState * qSt;
+   Q_plsfState qSt;
 }lspState;
 typedef struct
 {
@@ -10511,7 +10511,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
     * quantization and interpolation purposes.
     */
    lsp( mode, *used_mode, st->lspSt->lsp_old, st->lspSt->lsp_old_q, st->lspSt->
-         qSt->past_rq, A_t, Aq_t, lsp_new, &ana );
+         qSt.past_rq, A_t, Aq_t, lsp_new, &ana );
 
    /* Buffer lsp's and energy */
    dtx_buffer( &st->dtxEncSt->hist_ptr, st->dtxEncSt->lsp_hist, lsp_new, st->
@@ -10520,14 +10520,14 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
    if ( *used_mode == MRDTX ) {
       dtx_enc( &st->dtxEncSt->log_en_index, st->dtxEncSt->log_en_hist, st->
             dtxEncSt->lsp_hist, st->dtxEncSt->lsp_index, &st->dtxEncSt->
-            init_lsf_vq_index, compute_sid_flag, &st->lspSt->qSt->past_rq[0], st
+            init_lsf_vq_index, compute_sid_flag, &st->lspSt->qSt.past_rq[0], st
             ->gainQuantSt->gc_predSt->past_qua_en, &ana );
       memset( st->old_exc, 0, ( PIT_MAX + L_INTERPOL )<<2 );
       memset( st->mem_w0, 0, M <<2 );
       memset( st->mem_err, 0, M <<2 );
       memset( st->zero, 0, L_SUBFR <<2 );
       memset( st->hvec, 0, L_SUBFR <<2 );
-      memset( st->lspSt->qSt->past_rq, 0, M <<2 );
+      memset( st->lspSt->qSt.past_rq, 0, M <<2 );
       memcpy( st->lspSt->lsp_old, lsp_new, M <<2 );
       memcpy( st->lspSt->lsp_old_q, lsp_new, M <<2 );
 
@@ -10890,7 +10890,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->clLtpSt->pitchSt->T0_prev_subframe = 0;
 
    /* reset Q_plsfState */
-   memset( s->lspSt->qSt->past_rq, 0, sizeof( Float32 )*M );
+   memset( s->lspSt->qSt.past_rq, 0, sizeof( Float32 )*M );
    memcpy( s->lspSt->lsp_old, lsp_init_data, sizeof( lsp_init_data ) );
    memcpy( s->lspSt->lsp_old_q, lsp_init_data, sizeof( lsp_init_data ) );
 
@@ -11079,13 +11079,6 @@ static Word32 cod_amr_init( cod_amrState **state, Word32 dtx )
       return-1;
    }
 
-   /* init Q_plsfState */
-   if ( ( s->lspSt->qSt = ( Q_plsfState * ) malloc( sizeof( Q_plsfState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "can not malloc state structure\n" );
-      return-1;
-   }
-
    /* init gainQuantState */
    if ( ( s->gainQuantSt = ( gainQuantState * ) malloc( sizeof( gainQuantState )
          ) ) == NULL ) {
@@ -11175,7 +11168,6 @@ static void cod_amr_exit( cod_amrState **state )
    free( ( *state )->gainQuantSt->gc_predUncSt );
    free( ( *state )->gainQuantSt->adaptSt );
    free( ( *state )->clLtpSt->pitchSt );
-   free( ( *state )->lspSt->qSt );
    free( ( *state )->lpcSt->LevinsonSt );
    free( ( *state )->lpcSt );
    free( ( *state )->lspSt );
