@@ -30,199 +30,6 @@
 #include "sp_dec.h"
 #include "rom_dec.h"
 
-/*
- * Declare structure types
- */
-enum DTXStateType
-{
-   SPEECH = 0, DTX, DTX_MUTE
-};
-
-/*
- * Decoder memory structure
- */
-typedef struct
-{
-   /* history vector of past synthesis speech energy */
-   Word32 frameEnergyHist[L_ENERGYHIST];
-
-
-   /* state flags */
-   Word16 bgHangover;   /* counter; number of frames after last speech frame */
-
-
-}Bgn_scdState;
-typedef struct
-{
-   Word32 hangCount;   /* counter; */
-   /* history vector of past synthesis speech energy */
-   Word32 cbGainHistory[L_CBGAINHIST];
-   Word16 hangVar;   /* counter; */
-
-}Cb_gain_averageState;
-typedef struct
-{
-   Word32 lsp_meanSave[M];   /* Averaged LSPs saved for efficiency  */
-
-
-}lsp_avgState;
-typedef struct
-{
-   Word32 past_r_q[M];   /* Past quantized prediction error, Q15 */
-   Word32 past_lsf_q[M];   /* Past dequantized lsfs, Q15 */
-
-
-}D_plsfState;
-typedef struct
-{
-   Word32 pbuf[5];
-   Word32 past_gain_pit;
-   Word32 prev_gp;
-
-
-}ec_gain_pitchState;
-typedef struct
-{
-   Word32 gbuf[5];
-   Word32 past_gain_code;
-   Word32 prev_gc;
-
-
-}ec_gain_codeState;
-typedef struct
-{
-   /*
-    * normal MA predictor memory, Q10
-    * (contains 20*log10(quaErr))
-    */
-   Word32 past_qua_en[4];
-
-
-   /*
-    * MA predictor memory for MR122 mode, Q10
-    * (contains log2(quaErr))
-    */
-   Word32 past_qua_en_MR122[4];
-
-
-}gc_predState;
-typedef struct
-{
-   Word32 gainMem[PHDGAINMEMSIZE];
-   Word32 prevCbGain;
-   Word32 prevState;
-   Word16 lockFull;
-   Word16 onset;
-
-
-}ph_dispState;
-typedef struct
-{
-   enum DTXStateType dtxGlobalState;   /* contains previous state */
-
-   Word32 log_en;
-   Word32 old_log_en;
-   Word32 pn_seed_rx;
-   Word32 lsp[M];
-   Word32 lsp_old[M];
-   Word32 lsf_hist[M * DTX_HIST_SIZE];
-   Word32 lsf_hist_mean[M * DTX_HIST_SIZE];
-   Word32 log_en_hist[DTX_HIST_SIZE];
-   Word32 true_sid_period_inv;
-   Word16 since_last_sid;
-   Word16 lsf_hist_ptr;
-   Word16 log_pg_mean;
-   Word16 log_en_hist_ptr;
-   Word16 log_en_adjust;
-   Word16 dtxHangoverCount;
-   Word16 decAnaElapsedCount;
-   Word16 sid_frame;
-   Word16 valid_data;
-   Word16 dtxHangoverAdded;
-
-
-   /* updated in main decoder */
-   Word16 data_updated;   /* marker to know if CNI data is ever renewed */
-
-
-}dtx_decState;
-typedef struct
-{
-   Word32 past_gain;
-
-
-}agcState;
-typedef struct
-{
-   /* Excitation vector */
-   Word32 old_exc[L_SUBFR + PIT_MAX + L_INTERPOL];
-   Word32 *exc;
-   Word32 lsp_old[M];
-
-
-   /* Filter's memory */
-   Word32 mem_syn[M];
-
-
-   /* pitch sharpening */
-   Word32 sharp;
-   Word32 old_T0;
-
-
-   /* Variable holding received ltpLag, used in background noise and BFI */
-   Word32 T0_lagBuff;
-
-
-   /* Variables for the source characteristic detector (SCD) */
-   Word32 inBackgroundNoise;
-   Word32 voicedHangover;
-   Word32 ltpGainHistory[9];
-
-
-   /* Memories for bad frame handling */
-   Word32 excEnergyHist[9];
-   Word16 prev_bf;
-   Word16 prev_pdf;
-   Word16 state;
-   Word16 nodataSeed;
-
-
-   Bgn_scdState background_state;
-   Cb_gain_averageState Cb_gain_averState;
-   lsp_avgState lsp_avg_st;
-   D_plsfState lsfState;
-   ec_gain_pitchState ec_gain_p_st;
-   ec_gain_codeState ec_gain_c_st;
-   gc_predState pred_state;
-   ph_dispState ph_disp_st;
-   dtx_decState dtxDecoderState;
-}Decoder_amrState;
-typedef struct
-{
-   Word32 res2[L_SUBFR];
-   Word32 mem_syn_pst[M];
-   Word32 synth_buf[M + L_FRAME];
-   Word32 preemph_state_mem_pre;
-   agcState agc_state;
-}Post_FilterState;
-typedef struct
-{
-   Word32 y2_hi;
-   Word32 y2_lo;
-   Word32 y1_hi;
-   Word32 y1_lo;
-   Word32 x0;
-   Word32 x1;
-
-
-}Post_ProcessState;
-typedef struct
-{
-   Decoder_amrState decoder_amrState;
-   Post_FilterState post_state;
-   Post_ProcessState postHP_state;
-}Speech_Decode_FrameState;
-
 
 /*
  * CodAmrReset
@@ -238,7 +45,7 @@ typedef struct
  * Returns:
  *    void
  */
-static void Decoder_amr_reset( Decoder_amrState *state, enum Mode mode )
+static void Decoder_amr_reset(Decoder_amrState *state, enum Mode mode)
 {
    Word32 i;
 
@@ -1452,7 +1259,7 @@ static void Syn_filt_overflow( Word32 a[], Word32 x[], Word32 y[], Word32 lg, Wo
  *    void
  */
 static void dtx_dec( dtx_decState *st, Word32 *mem_syn, D_plsfState *lsfState,
-      gc_predState *pred_state, Cb_gain_averageState *averState, enum
+      dec_gc_predState *pred_state, Cb_gain_averageState *averState, enum
       DTXStateType new_state, enum Mode mode, Word16 parm[], Word32 synth[],
       Word32 A_t[] )
 {
@@ -3043,7 +2850,7 @@ static void ec_gain_pitch_update( ec_gain_pitchState *st, Word32 bfi,
  * Returns:
  *    void
  */
-static void gc_pred( gc_predState *st, enum Mode mode, Word32 *code, Word32 *
+static void gc_pred(dec_gc_predState *st, enum Mode mode, Word32 *code, Word32 *
       exp_gcode0, Word32 *frac_gcode0, Word32 *exp_en, Word32 *frac_en )
 {
    Word32 exp, frac, ener_code = 0, i = 0;
@@ -3244,7 +3051,7 @@ static void gc_pred( gc_predState *st, enum Mode mode, Word32 *code, Word32 *
  * Returns:
  *    void
  */
-static void gc_pred_update( gc_predState *st, Word32 qua_ener_MR122,
+static void gc_pred_update(dec_gc_predState *st, Word32 qua_ener_MR122,
       Word32 qua_ener )
 {
    Word32 i;
@@ -3279,7 +3086,7 @@ static void gc_pred_update( gc_predState *st, Word32 qua_ener_MR122,
  * Returns:
  *    void
  */
-static void Dec_gain( gc_predState *pred_state, enum Mode mode, Word32 index,
+static void Dec_gain(dec_gc_predState *pred_state, enum Mode mode, Word32 index,
       Word32 code[], Word32 evenSubfr, Word32 *gain_pit, Word32 *gain_cod )
 {
    Word32 frac, gcode0, exp, qua_ener, qua_ener_MR122, g_code, tmp;
@@ -3386,7 +3193,7 @@ static void Dec_gain( gc_predState *pred_state, enum Mode mode, Word32 index,
  * Returns:
  *    void
  */
-static void gc_pred_average_limited( gc_predState *st, Word32 *ener_avg_MR122,
+static void gc_pred_average_limited( dec_gc_predState *st, Word32 *ener_avg_MR122,
       Word32 *ener_avg )
 {
    Word32 av_pred_en, i;
@@ -3443,7 +3250,7 @@ static void gc_pred_average_limited( gc_predState *st, Word32 *ener_avg_MR122,
  * Returns:
  *    void
  */
-static void ec_gain_code( ec_gain_codeState *st, gc_predState *pred_state,
+static void ec_gain_code( ec_gain_codeState *st, dec_gc_predState *pred_state,
       Word16 state, Word32 *gain_code )
 {
    Word32 tmp, qua_ener_MR122, qua_ener;
@@ -3527,7 +3334,7 @@ static void ec_gain_code_update( ec_gain_codeState *st, Word16 bfi,
  * Returns:
  *    void
  */
-static void d_gain_code( gc_predState *pred_state, enum Mode mode, Word32 index,
+static void d_gain_code( dec_gc_predState *pred_state, enum Mode mode, Word32 index,
                         Word32 code[], Word32 *gain_code )
 {
    Word32 g_code0, exp, frac, qua_ener_MR122, qua_ener;
@@ -5665,7 +5472,7 @@ static void Post_Filter( Post_FilterState *st, enum Mode mode, Word32 *syn,
  * Returns:
  *    void
  */
-void Speech_Decode_Frame( void *st, enum Mode mode, Word16 *parm, enum
+void Speech_Decode_Frame(Speech_Decode_FrameState* state, enum Mode mode, Word16 *parm, enum
       RXFrameType frame_type, Word16 *synth )
 {
    Word32 Az_dec[AZ_SIZE];   /* Decoded Az for post-filter in 4 subframes*/
@@ -5673,14 +5480,11 @@ void Speech_Decode_Frame( void *st, enum Mode mode, Word16 *parm, enum
    Word32 i;
 
    /* Synthesis */
-   Decoder_amr( &( ( Speech_Decode_FrameState * ) st )->decoder_amrState, mode,
-         parm, frame_type, synth_speech, Az_dec );
-   Post_Filter( &( ( Speech_Decode_FrameState * ) st )->post_state, mode,
-         synth_speech, Az_dec );
+   Decoder_amr(&state->decoder_amrState, mode, parm, frame_type, synth_speech, Az_dec );
+   Post_Filter(&state->post_state, mode, synth_speech, Az_dec);
 
    /* post HP filter, and 15->16 bits */
-   Post_Process( &( ( Speech_Decode_FrameState * ) st )->postHP_state,
-         synth_speech );
+   Post_Process(&state->postHP_state, synth_speech);
 
 for ( i = 0; i < L_FRAME; i++ ) {
 #ifndef NO13BIT
@@ -5710,10 +5514,6 @@ for ( i = 0; i < L_FRAME; i++ ) {
  */
 static int Post_Process_reset( Post_ProcessState *state )
 {
-   if ( ( Post_ProcessState * )state == NULL ) {
-      fprintf( stderr, "Post_Process_reset: invalid parameter\n" );
-      return-1;
-   }
    state->y2_hi = 0;
    state->y2_lo = 0;
    state->y1_hi = 0;
@@ -5721,31 +5521,6 @@ static int Post_Process_reset( Post_ProcessState *state )
    state->x0 = 0;
    state->x1 = 0;
    return 0;
-}
-
-
-/*
- * Post_Process_exit
- *
- *
- * Parameters:
- *    state                I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-static void Post_Process_exit( Post_ProcessState **state )
-{
-   if ( state == NULL || *state == NULL )
-      return;
-
-   /* deallocate memory */
-   free( *state );
-   *state = NULL;
-   return;
 }
 
 
@@ -5762,7 +5537,7 @@ static void Post_Process_exit( Post_ProcessState **state )
  * Returns:
  *    success = 0
  */
-static int Decoder_amr_init( Decoder_amrState *state )
+static int Decoder_amr_init(Decoder_amrState *state)
 {
    Decoder_amr_reset(state, 0);
    return 0;
@@ -5834,27 +5609,6 @@ static int Post_Process_init( Post_ProcessState *state )
 
 
 /*
- * Speech_Decode_Frame_exit
- *
- *
- * Parameters:
- *    state                I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-void Speech_Decode_Frame_exit( void **st )
-{
-   /* deallocate memory */
-   free( (( Speech_Decode_FrameState * )st) );
-   return;
-}
-
-
-/*
  * Speech_Decode_Frame_reset
  *
  *
@@ -5867,16 +5621,11 @@ void Speech_Decode_Frame_exit( void **st )
  * Returns:
  *    -1 = failure
  */
-int Speech_Decode_Frame_reset( void **st )
+int Speech_Decode_Frame_reset(Speech_Decode_FrameState* state)
 {
-   Speech_Decode_FrameState * state;
-
-   if ( st == NULL || *st == NULL )
-      return (-1);
-   state = ( Speech_Decode_FrameState * )st;
-   Decoder_amr_reset(&state->decoder_amrState, ( enum Mode ) 0 );
-   Post_Filter_reset(&state->post_state );
-   Post_Process_reset(&state->postHP_state );
+   Decoder_amr_reset(&state->decoder_amrState, ( enum Mode )0);
+   Post_Filter_reset(&state->post_state);
+   Post_Process_reset(&state->postHP_state);
    return 0;
 }
 
@@ -5894,22 +5643,10 @@ int Speech_Decode_Frame_reset( void **st )
  * Returns:
  *    success = 0
  */
-void * Speech_Decode_Frame_init( )
+void Speech_Decode_Frame_init(Speech_Decode_FrameState* state)
 {
-   Speech_Decode_FrameState * s;
-
-   /* allocate memory */
-   if ( ( s = ( Speech_Decode_FrameState * ) malloc( sizeof(
-         Speech_Decode_FrameState ) ) ) == NULL ) {
-      fprintf( stderr, "Speech_Decode_Frame_init: can not malloc state "
-            "structure\n" );
-      return NULL;
-   }
-
-   if ( Decoder_amr_init( &s->decoder_amrState ) || Post_Filter_init(&s->
-         post_state ) || Post_Process_init( &s->postHP_state ) ) {
-      Speech_Decode_Frame_exit( ( void ** )( &s ) );
-      return NULL;
-   }
-   return s;
+   Decoder_amr_init(&state->decoder_amrState);
+   Post_Filter_init(&state->post_state);
+   Post_Process_init(&state->postHP_state);
+   return;
 }

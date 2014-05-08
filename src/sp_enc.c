@@ -26,6 +26,7 @@
 #include <math.h>
 #include <float.h>
 #include "sp_enc.h"
+#include "rom_enc.h"
 
 /*
  * Dotproduct40

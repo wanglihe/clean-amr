@@ -26,41 +26,12 @@
 #include "typedef.h"
 #include "sp_enc.h"
 
-#define M               10    /* Order of LP filter */
-#define MP1             (M+1) /* Order of LP filter + 1 */
-#define L_WINDOW        240   /* Window size in LP analysis */
-#define L_NEXT          40    /* Overhead in LP analysis */
-#define LTPG_MEM_SIZE   5     /* number of stored past LTP coding gains + 1 */
-#define N_FRAME         7     /* old pitch gains in average calculation */
-#define DTX_HIST_SIZE   8     /* DTX history size */
-#define L_TOTAL         320   /* Total size of speech buffer. */
-#define L_FRAME         160   /* Frame size */
-#define L_FRAME_BY2     80    /* Frame size divided by 2 */
-#define L_SUBFR         40    /* Subframe size */
-#define L_CODE          40    /* codevector length */
-#define PIT_MAX         143   /* Maximum pitch lag */
-#define PIT_MIN         20    /* Minimum pitch lag */
-#define PIT_MIN_MR122   18    /* Minimum pitch lag (MR122 mode) */
-#define L_INTERPOL      (10+1)/* Length of filter for interpolation */
-#define NPRED           4     /* number of prediction taps */
-#define SHARPMIN        0     /* Minimum value of pitch sharpening */
-#define MAX_PRM_SIZE    57    /* max. num. of params */
-#define L_INTER_SRCH    4     /* Length of filter for CL LTP search interpolation */
-#define GP_CLIP         0.95F /* Pitch gain clipping */
-#define UP_SAMP_MAX     6
-#define NB_TRACK        5     /* number of tracks */
-#define NB_TRACK_MR102  4     /* number of tracks mode mr102 */
-#define STEP            5     /* codebook step size */
-#define STEP_MR102      4     /* codebook step size mode mr102 */
-#define NC              M/2   /* Order of LP filter divided by 2 */
-
 #define SCALE_LSP_FREQ  (Float32)(4000.0/3.141592654)
 #define SCALE_FREQ_LSP  (Float32)(3.141592654/4000.0)
 #define SLOPE1_WGHT_LSF (Float32)((3.347-1.8)/(450.0-0.0))
 #define SLOPE2_WGHT_LSF (Float32)((1.8-1.0)/(1500.0-450.0))
 
 #define FRAME_LEN 160    /* Length (samples) of the input frame          */
-#define COMPLEN 9        /* Number of sub-bands used by VAD              */
 #define INV_COMPLEN 3641 /* 1.0/COMPLEN*2^15                             */
 #define LOOKAHEAD 40     /* length of the lookahead used by speech coder */
 

@@ -25,22 +25,9 @@
 /*
  * include files
  */
-#include "typedef.h"
-#include "rom_enc.h"
 
-/*
- * definition of modes for encoder
- */
-enum Mode { MR475 = 0,
-            MR515,
-            MR59,
-            MR67,
-            MR74,
-            MR795,
-            MR102,
-            MR122,
-            MRDTX
-};
+#include "typedef.h"
+#include "amrnb_rom.h"
 
 /*
  * Definition of structures used in encoding process
@@ -199,7 +186,7 @@ typedef struct
 
 
    /* normal MA predictor memory, (contains 20*log10(qua_err)) */
-}gc_predState;
+}enc_gc_predState;
 
 typedef struct
 {
@@ -221,8 +208,8 @@ typedef struct
    Word16 *gain_idx_ptr;
 
 
-   gc_predState gc_predSt;
-   gc_predState gc_predUncSt;
+   enc_gc_predState gc_predSt;
+   enc_gc_predState gc_predUncSt;
    gain_adaptState adaptSt;
 }gainQuantState;
 typedef struct

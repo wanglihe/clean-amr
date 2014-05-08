@@ -36,7 +36,8 @@ int main() {
     int dtx = 0;
     enc_interface_State enstate;
     Encoder_Interface_init(&enstate, dtx);
-    void* destate = Decoder_Interface_init();
+    dec_interface_State destate;
+    Decoder_Interface_init(&destate);
 
     FILE* pcm_orig = fopen("cclnb.orig", "wb");
     FILE* amrnb = fopen("cclnb.amrnb", "wb");
@@ -59,12 +60,10 @@ int main() {
         /*printf("test times: %d, bytes: %d\n", i, byte_counter);*/
         enum Mode dec_mode = (serial_data[0] >> 3) & 0x000F;
         int read_size = block_size[dec_mode];
-        Decoder_Interface_Decode(destate, serial_data, speech, 0);
+        Decoder_Interface_Decode(&destate, serial_data, speech, 0);
         fwrite(speech, sizeof(short int), 160, pcm_back);
         /*printf("test times: %d, bytes: %d\n", i, read_size);*/
     }
-    //Encoder_Interface_exit(enstate);
-    Decoder_Interface_exit(destate);
     fclose(pcm_orig);
     fclose(amrnb);
     fclose(pcm_back);

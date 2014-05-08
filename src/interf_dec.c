@@ -27,27 +27,8 @@
 #include <stdio.h>
 #include <memory.h>
 #include "typedef.h"
-#include "sp_dec.h"
+#include "interf_dec.h"
 #include "interf_rom.h"
-#include "rom_dec.h"
-
-/*
- * definition of constants
- */
-#define EHF_MASK 0x0008 /* encoder homing frame pattern */
-typedef
-
-struct
-{
-   int reset_flag_old;   /* previous was homing frame */
-
-
-   enum RXFrameType prev_ft;   /* previous frame type */
-   enum Mode prev_mode;   /* previous mode */
-   void *decoder_State;   /* Points decoder state */
-
-
-}dec_interface_State;
 
 /*
  * DecoderMMS
@@ -269,53 +250,11 @@ void Decoder_Interface_reset( dec_interface_State *st )
  *    success           : pointer to structure
  *    failure           : NULL
  */
-void * Decoder_Interface_init( void )
+void Decoder_Interface_init(dec_interface_State* state)
 {
-   dec_interface_State * s;
-
-   /* allocate memory */
-   if ( ( s = ( dec_interface_State * ) malloc( sizeof( dec_interface_State ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "Decoder_Interface_init: "
-            "can not malloc state structure\n" );
-      return NULL;
-   }
-   s->decoder_State = Speech_Decode_Frame_init( );
-
-   if ( s->decoder_State == NULL ) {
-      free( s );
-      return NULL;
-   }
-   Decoder_Interface_reset( s );
-   return s;
+   Speech_Decode_Frame_init(&state->decoder_State);
+   Decoder_Interface_reset(state);
 }
-
-
-/*
- * Decoder_Interface_exit
- *
- *
- * Parameters:
- *    state                I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-void Decoder_Interface_exit( void *state )
-{
-   dec_interface_State * s;
-   s = ( dec_interface_State * )state;
-
-   /* free memory */
-   Speech_Decode_Frame_exit(s->decoder_State );
-   free( s );
-   s = NULL;
-   state = NULL;
-}
-
 
 /*
  * Decoder_Interface_Decode
@@ -333,13 +272,7 @@ void Decoder_Interface_exit( void *state )
  * Returns:
  *    Void
  */
-void Decoder_Interface_Decode( void *st,
-
-      UWord8 *bits,
-
-
-      Word16 *synth, int bfi)
-{
+void Decoder_Interface_Decode(dec_interface_State* state, UWord8 *bits, Word16 *synth, int bfi) {
    enum Mode mode;   /* AMR mode */
 
    enum Mode speech_mode = MR475;   /* speech mode */
@@ -347,7 +280,6 @@ void Decoder_Interface_Decode( void *st,
    Word16 prm[PRMNO_MR122];   /* AMR parameters */
 
    enum RXFrameType frame_type;   /* frame type */
-   dec_interface_State * s;   /* pointer to structure */
 
    const Word16 *homing;   /* pointer to homing frame */
    Word16 homingSize;   /* frame size for homing frame */
@@ -355,9 +287,6 @@ void Decoder_Interface_Decode( void *st,
    Word32 resetFlag = 1;   /* homing frame */
 
    Word16 q_bit;
-
-   s = ( dec_interface_State * )st;
-
 
    /*
     * extract mode information and frametype,
@@ -372,29 +301,29 @@ void Decoder_Interface_Decode( void *st,
       }
       else if ( frame_type != RX_NO_DATA ) {
          frame_type = RX_SID_BAD;
-         mode = s->prev_mode;
+         mode = state->prev_mode;
       }
    } else {
        if ( frame_type == RX_SID_FIRST || frame_type == RX_SID_UPDATE) {
            mode = speech_mode;
        }
        else if ( frame_type == RX_NO_DATA ) {
-           mode = s->prev_mode;
+           mode = state->prev_mode;
        }
        /*
         * if no mode information
         * guess one from the previous frame
         */
        if ( frame_type == RX_SPEECH_BAD ) {
-          mode = s->prev_mode;
-          if ( s->prev_ft >= RX_SID_FIRST ) {
+          mode = state->prev_mode;
+          if ( state->prev_ft >= RX_SID_FIRST ) {
              frame_type = RX_SID_BAD;
           }
        }
    }
 
    /* test for homing frame */
-   if ( s->reset_flag_old == 1 ) {
+   if ( state->reset_flag_old == 1 ) {
       switch ( mode ) {
          case MR122:
             homing = dhf_MR122;
@@ -450,15 +379,15 @@ void Decoder_Interface_Decode( void *st,
       }
    }
 
-   if ( ( resetFlag == 0 ) && ( s->reset_flag_old != 0 ) ) {
+   if ( ( resetFlag == 0 ) && ( state->reset_flag_old != 0 ) ) {
       for ( i = 0; i < 160; i++ ) {
          synth[i] = EHF_MASK;
       }
    }
    else
-      Speech_Decode_Frame( s->decoder_State, mode, prm, frame_type, synth );
+      Speech_Decode_Frame(&state->decoder_State, mode, prm, frame_type, synth );
 
-   if ( s->reset_flag_old == 0 ) {
+   if ( state->reset_flag_old == 0 ) {
       /* check whole frame */
       switch ( mode ) {
          case MR122:
@@ -516,9 +445,9 @@ void Decoder_Interface_Decode( void *st,
 
    /* reset decoder if current frame is a homing frame */
    if ( resetFlag == 0 ) {
-      Speech_Decode_Frame_reset( s->decoder_State );
+      Speech_Decode_Frame_reset(&state->decoder_State );
    }
-   s->reset_flag_old = !resetFlag;
-   s->prev_ft = frame_type;
-   s->prev_mode = mode;
+   state->reset_flag_old = !resetFlag;
+   state->prev_ft = frame_type;
+   state->prev_mode = mode;
 }
