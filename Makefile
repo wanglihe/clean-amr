@@ -65,6 +65,7 @@ clean:
 	rm -f $(ALL_OBJS)
 	rm -f c3gnb
 	rm -f cclnb
+	rm -f *.orig *.amrnb *.back
 
 c3gnb.o: c3gnb.c $(AMRNBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@

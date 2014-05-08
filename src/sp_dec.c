@@ -187,15 +187,15 @@ typedef struct
    Word16 nodataSeed;
 
 
-   Bgn_scdState * background_state;
-   Cb_gain_averageState * Cb_gain_averState;
-   lsp_avgState * lsp_avg_st;
-   D_plsfState * lsfState;
-   ec_gain_pitchState * ec_gain_p_st;
-   ec_gain_codeState * ec_gain_c_st;
-   gc_predState * pred_state;
-   ph_dispState * ph_disp_st;
-   dtx_decState * dtxDecoderState;
+   Bgn_scdState background_state;
+   Cb_gain_averageState Cb_gain_averState;
+   lsp_avgState lsp_avg_st;
+   D_plsfState lsfState;
+   ec_gain_pitchState ec_gain_p_st;
+   ec_gain_codeState ec_gain_c_st;
+   gc_predState pred_state;
+   ph_dispState ph_disp_st;
+   dtx_decState dtxDecoderState;
 }Decoder_amrState;
 typedef struct
 {
@@ -203,7 +203,7 @@ typedef struct
    Word32 mem_syn_pst[M];
    Word32 synth_buf[M + L_FRAME];
    Word32 preemph_state_mem_pre;
-   agcState * agc_state;
+   agcState agc_state;
 }Post_FilterState;
 typedef struct
 {
@@ -218,9 +218,9 @@ typedef struct
 }Post_ProcessState;
 typedef struct
 {
-   Decoder_amrState * decoder_amrState;
-   Post_FilterState * post_state;
-   Post_ProcessState * postHP_state;
+   Decoder_amrState decoder_amrState;
+   Post_FilterState post_state;
+   Post_ProcessState postHP_state;
 }Speech_Decode_FrameState;
 
 
@@ -243,9 +243,9 @@ static void Decoder_amr_reset( Decoder_amrState *state, enum Mode mode )
    Word32 i;
 
    /* Cb_gain_average_reset */
-   memset(state->Cb_gain_averState->cbGainHistory, 0, L_CBGAINHIST << 2);
-   state->Cb_gain_averState->hangVar = 0;
-   state->Cb_gain_averState->hangCount= 0;
+   memset(state->Cb_gain_averState.cbGainHistory, 0, L_CBGAINHIST << 2);
+   state->Cb_gain_averState.hangVar = 0;
+   state->Cb_gain_averState.hangCount= 0;
 
    /* Initialize static pointer */
    state->exc = state->old_exc + PIT_MAX + L_INTERPOL;
@@ -287,129 +287,130 @@ static void Decoder_amr_reset( Decoder_amrState *state, enum Mode mode )
    memset( state->ltpGainHistory, 0, 9 <<2 );
 
    if ( mode != MRDTX ) {
-      state->lsp_avg_st->lsp_meanSave[0] = 1384;
-      state->lsp_avg_st->lsp_meanSave[1] = 2077;
-      state->lsp_avg_st->lsp_meanSave[2] = 3420;
-      state->lsp_avg_st->lsp_meanSave[3] = 5108;
-      state->lsp_avg_st->lsp_meanSave[4] = 6742;
-      state->lsp_avg_st->lsp_meanSave[5] = 8122;
-      state->lsp_avg_st->lsp_meanSave[6] = 9863;
-      state->lsp_avg_st->lsp_meanSave[7] = 11092;
-      state->lsp_avg_st->lsp_meanSave[8] = 12714;
-      state->lsp_avg_st->lsp_meanSave[9] = 13701;
+      state->lsp_avg_st.lsp_meanSave[0] = 1384;
+      state->lsp_avg_st.lsp_meanSave[1] = 2077;
+      state->lsp_avg_st.lsp_meanSave[2] = 3420;
+      state->lsp_avg_st.lsp_meanSave[3] = 5108;
+      state->lsp_avg_st.lsp_meanSave[4] = 6742;
+      state->lsp_avg_st.lsp_meanSave[5] = 8122;
+      state->lsp_avg_st.lsp_meanSave[6] = 9863;
+      state->lsp_avg_st.lsp_meanSave[7] = 11092;
+      state->lsp_avg_st.lsp_meanSave[8] = 12714;
+      state->lsp_avg_st.lsp_meanSave[9] = 13701;
    }
-   memset( state->lsfState->past_r_q, 0, M <<2 );
+   memset( state->lsfState.past_r_q, 0, M <<2 );
 
    /* Past dequantized lsfs */
-   state->lsfState->past_lsf_q[0] = 1384;
-   state->lsfState->past_lsf_q[1] = 2077;
-   state->lsfState->past_lsf_q[2] = 3420;
-   state->lsfState->past_lsf_q[3] = 5108;
-   state->lsfState->past_lsf_q[4] = 6742;
-   state->lsfState->past_lsf_q[5] = 8122;
-   state->lsfState->past_lsf_q[6] = 9863;
-   state->lsfState->past_lsf_q[7] = 11092;
-   state->lsfState->past_lsf_q[8] = 12714;
-   state->lsfState->past_lsf_q[9] = 13701;
+   state->lsfState.past_lsf_q[0] = 1384;
+   state->lsfState.past_lsf_q[1] = 2077;
+   state->lsfState.past_lsf_q[2] = 3420;
+   state->lsfState.past_lsf_q[3] = 5108;
+   state->lsfState.past_lsf_q[4] = 6742;
+   state->lsfState.past_lsf_q[5] = 8122;
+   state->lsfState.past_lsf_q[6] = 9863;
+   state->lsfState.past_lsf_q[7] = 11092;
+   state->lsfState.past_lsf_q[8] = 12714;
+   state->lsfState.past_lsf_q[9] = 13701;
 
-   for ( i = 0; i < 5; i++ )
-      state->ec_gain_p_st->pbuf[i] = 1640;
-   state->ec_gain_p_st->past_gain_pit = 0;
-   state->ec_gain_p_st->prev_gp = 16384;
+   for ( i = 0; i < 5; i++ ) {
+       state->ec_gain_p_st.pbuf[i] = 1640;
+   }
+   state->ec_gain_p_st.past_gain_pit = 0;
+   state->ec_gain_p_st.prev_gp = 16384;
 
-   for ( i = 0; i < 5; i++ )
-      state->ec_gain_c_st->gbuf[i] = 1;
-   state->ec_gain_c_st->past_gain_code = 0;
-   state->ec_gain_c_st->prev_gc = 1;
+   for ( i = 0; i < 5; i++ ) {
+       state->ec_gain_c_st.gbuf[i] = 1;
+   }
+   state->ec_gain_c_st.past_gain_code = 0;
+   state->ec_gain_c_st.prev_gc = 1;
 
    if ( mode != MRDTX ) {
       for ( i = 0; i < NPRED; i++ ) {
-         state->pred_state->past_qua_en[i] = MIN_ENERGY;
-         state->pred_state->past_qua_en_MR122[i] = MIN_ENERGY_MR122;
+         state->pred_state.past_qua_en[i] = MIN_ENERGY;
+         state->pred_state.past_qua_en_MR122[i] = MIN_ENERGY_MR122;
       }
    }
    state->nodataSeed = 21845;
 
    /* Static vectors to zero */
-   memset( state->background_state->frameEnergyHist, 0, L_ENERGYHIST <<2 );
+   memset( state->background_state.frameEnergyHist, 0, L_ENERGYHIST <<2 );
 
    /* Initialize hangover handling */
-   state->background_state->bgHangover = 0;
+   state->background_state.bgHangover = 0;
 
    /* phDispReset */
-   memset( state->ph_disp_st->gainMem, 0, PHDGAINMEMSIZE <<2 );
-   state->ph_disp_st->prevState = 0;
-   state->ph_disp_st->prevCbGain = 0;
-   state->ph_disp_st->lockFull = 0;
-   state->ph_disp_st->onset = 0;   /* assume no onset in start */
+   memset( state->ph_disp_st.gainMem, 0, PHDGAINMEMSIZE <<2 );
+   state->ph_disp_st.prevState = 0;
+   state->ph_disp_st.prevCbGain = 0;
+   state->ph_disp_st.lockFull = 0;
+   state->ph_disp_st.onset = 0;   /* assume no onset in start */
 
    if ( mode != MRDTX ) {
-      state->dtxDecoderState->since_last_sid = 0;
-      state->dtxDecoderState->true_sid_period_inv = 8192;
-      state->dtxDecoderState->log_en = 3500;
-      state->dtxDecoderState->old_log_en = 3500;
+      state->dtxDecoderState.since_last_sid = 0;
+      state->dtxDecoderState.true_sid_period_inv = 8192;
+      state->dtxDecoderState.log_en = 3500;
+      state->dtxDecoderState.old_log_en = 3500;
 
       /* low level noise for better performance in  DTX handover cases*/
-      state->dtxDecoderState->pn_seed_rx = PN_INITIAL_SEED;
+      state->dtxDecoderState.pn_seed_rx = PN_INITIAL_SEED;
 
       /* Initialize state->lsp [] */
-      state->dtxDecoderState->lsp[0] = 30000;
-      state->dtxDecoderState->lsp[1] = 26000;
-      state->dtxDecoderState->lsp[2] = 21000;
-      state->dtxDecoderState->lsp[3] = 15000;
-      state->dtxDecoderState->lsp[4] = 8000;
-      state->dtxDecoderState->lsp[5] = 0;
-      state->dtxDecoderState->lsp[6] = -8000;
-      state->dtxDecoderState->lsp[7] = -15000;
-      state->dtxDecoderState->lsp[8] = -21000;
-      state->dtxDecoderState->lsp[9] = -26000;
+      state->dtxDecoderState.lsp[0] = 30000;
+      state->dtxDecoderState.lsp[1] = 26000;
+      state->dtxDecoderState.lsp[2] = 21000;
+      state->dtxDecoderState.lsp[3] = 15000;
+      state->dtxDecoderState.lsp[4] = 8000;
+      state->dtxDecoderState.lsp[5] = 0;
+      state->dtxDecoderState.lsp[6] = -8000;
+      state->dtxDecoderState.lsp[7] = -15000;
+      state->dtxDecoderState.lsp[8] = -21000;
+      state->dtxDecoderState.lsp[9] = -26000;
 
       /* Initialize state->lsp_old [] */
-      state->dtxDecoderState->lsp_old[0] = 30000;
-      state->dtxDecoderState->lsp_old[1] = 26000;
-      state->dtxDecoderState->lsp_old[2] = 21000;
-      state->dtxDecoderState->lsp_old[3] = 15000;
-      state->dtxDecoderState->lsp_old[4] = 8000;
-      state->dtxDecoderState->lsp_old[5] = 0;
-      state->dtxDecoderState->lsp_old[6] = -8000;
-      state->dtxDecoderState->lsp_old[7] = -15000;
-      state->dtxDecoderState->lsp_old[8] = -21000;
-      state->dtxDecoderState->lsp_old[9] = -26000;
-      state->dtxDecoderState->lsf_hist_ptr = 0;
-      state->dtxDecoderState->log_pg_mean = 0;
-      state->dtxDecoderState->log_en_hist_ptr = 0;
+      state->dtxDecoderState.lsp_old[0] = 30000;
+      state->dtxDecoderState.lsp_old[1] = 26000;
+      state->dtxDecoderState.lsp_old[2] = 21000;
+      state->dtxDecoderState.lsp_old[3] = 15000;
+      state->dtxDecoderState.lsp_old[4] = 8000;
+      state->dtxDecoderState.lsp_old[5] = 0;
+      state->dtxDecoderState.lsp_old[6] = -8000;
+      state->dtxDecoderState.lsp_old[7] = -15000;
+      state->dtxDecoderState.lsp_old[8] = -21000;
+      state->dtxDecoderState.lsp_old[9] = -26000;
+      state->dtxDecoderState.lsf_hist_ptr = 0;
+      state->dtxDecoderState.log_pg_mean = 0;
+      state->dtxDecoderState.log_en_hist_ptr = 0;
 
       /* initialize decoder lsf history */
-      state->dtxDecoderState->lsf_hist[0] = 1384;
-      state->dtxDecoderState->lsf_hist[1] = 2077;
-      state->dtxDecoderState->lsf_hist[2] = 3420;
-      state->dtxDecoderState->lsf_hist[3] = 5108;
-      state->dtxDecoderState->lsf_hist[4] = 6742;
-      state->dtxDecoderState->lsf_hist[5] = 8122;
-      state->dtxDecoderState->lsf_hist[6] = 9863;
-      state->dtxDecoderState->lsf_hist[7] = 11092;
-      state->dtxDecoderState->lsf_hist[8] = 12714;
-      state->dtxDecoderState->lsf_hist[9] = 13701;
+      state->dtxDecoderState.lsf_hist[0] = 1384;
+      state->dtxDecoderState.lsf_hist[1] = 2077;
+      state->dtxDecoderState.lsf_hist[2] = 3420;
+      state->dtxDecoderState.lsf_hist[3] = 5108;
+      state->dtxDecoderState.lsf_hist[4] = 6742;
+      state->dtxDecoderState.lsf_hist[5] = 8122;
+      state->dtxDecoderState.lsf_hist[6] = 9863;
+      state->dtxDecoderState.lsf_hist[7] = 11092;
+      state->dtxDecoderState.lsf_hist[8] = 12714;
+      state->dtxDecoderState.lsf_hist[9] = 13701;
 
       for ( i = 1; i < DTX_HIST_SIZE; i++ ) {
-         memcpy( &state->dtxDecoderState->lsf_hist[M * i], &state->
-               dtxDecoderState->lsf_hist[0], M <<2 );
+         memcpy( &state->dtxDecoderState.lsf_hist[M * i], &state->
+               dtxDecoderState.lsf_hist[0], M <<2 );
       }
-      memset( state->dtxDecoderState->lsf_hist_mean, 0, M * DTX_HIST_SIZE <<2 );
+      memset( state->dtxDecoderState.lsf_hist_mean, 0, M * DTX_HIST_SIZE <<2 );
 
       /* initialize decoder log frame energy */
       for ( i = 0; i < DTX_HIST_SIZE; i++ ) {
-         state->dtxDecoderState->log_en_hist[i] = state->dtxDecoderState->log_en
-         ;
+         state->dtxDecoderState.log_en_hist[i] = state->dtxDecoderState.log_en;
       }
-      state->dtxDecoderState->log_en_adjust = 0;
-      state->dtxDecoderState->dtxHangoverCount = DTX_HANG_CONST;
-      state->dtxDecoderState->decAnaElapsedCount = 31;
-      state->dtxDecoderState->sid_frame = 0;
-      state->dtxDecoderState->valid_data = 0;
-      state->dtxDecoderState->dtxHangoverAdded = 0;
-      state->dtxDecoderState->dtxGlobalState = DTX;
-      state->dtxDecoderState->data_updated = 0;
+      state->dtxDecoderState.log_en_adjust = 0;
+      state->dtxDecoderState.dtxHangoverCount = DTX_HANG_CONST;
+      state->dtxDecoderState.decAnaElapsedCount = 31;
+      state->dtxDecoderState.sid_frame = 0;
+      state->dtxDecoderState.valid_data = 0;
+      state->dtxDecoderState.dtxHangoverAdded = 0;
+      state->dtxDecoderState.dtxGlobalState = DTX;
+      state->dtxDecoderState.data_updated = 0;
    }
    return;
 }
@@ -4646,17 +4647,17 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
    enum DTXStateType newDTXState;   /* SPEECH , DTX, DTX_MUTE */
 
    /* find the new  DTX state  SPEECH OR DTX */
-   newDTXState = rx_dtx_handler( st->dtxDecoderState, frame_type );
+   newDTXState = rx_dtx_handler( &st->dtxDecoderState, frame_type );
 
    /* DTX actions */
    if ( newDTXState != SPEECH ) {
       Decoder_amr_reset( st, MRDTX );
-      dtx_dec( st->dtxDecoderState, st->mem_syn, st->lsfState, st->pred_state,
-            st->Cb_gain_averState, newDTXState, mode, parm, synth, A_t );
+      dtx_dec( &st->dtxDecoderState, st->mem_syn, &st->lsfState, &st->pred_state,
+            &st->Cb_gain_averState, newDTXState, mode, parm, synth, A_t );
 
       /* update average lsp */
-      Lsf_lsp( st->lsfState->past_lsf_q, st->lsp_old );
-      lsp_avg( st->lsp_avg_st, st->lsfState->past_lsf_q );
+      Lsf_lsp( st->lsfState.past_lsf_q, st->lsp_old );
+      lsp_avg(&st->lsp_avg_st, st->lsfState.past_lsf_q );
       goto theEnd;
    }
 
@@ -4697,31 +4698,31 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
      * erroneously interpreted as a good speech frame as small as
      * possible (the decoder output in this case is quickly muted)
      */
-   if ( st->dtxDecoderState->dtxGlobalState == DTX ) {
+   if ( st->dtxDecoderState.dtxGlobalState == DTX ) {
       st->state = 5;
       st->prev_bf = 0;
    }
-   else if ( st->dtxDecoderState->dtxGlobalState == DTX_MUTE ) {
+   else if ( st->dtxDecoderState.dtxGlobalState == DTX_MUTE ) {
       st->state = 5;
       st->prev_bf = 1;
    }
 
    /* save old LSFs for CB gain smoothing */
-   memcpy( prev_lsf, st->lsfState->past_lsf_q, M <<2 );
+   memcpy( prev_lsf, st->lsfState.past_lsf_q, M <<2 );
 
     /*
      * decode LSF parameters and generate interpolated lpc coefficients
      * for the 4 subframes
      */
    if ( mode != MR122 ) {
-      D_plsf_3( st->lsfState, mode, bfi, parm, lsp_new );
+      D_plsf_3(&st->lsfState, mode, bfi, parm, lsp_new );
 
       /* Advance synthesis parameters pointer */
       parm += 3;
       Int_lpc_1to3( st->lsp_old, lsp_new, A_t );
    }
    else {
-      D_plsf_5( st->lsfState, bfi, parm, lsp_mid, lsp_new );
+      D_plsf_5(&st->lsfState, bfi, parm, lsp_mid, lsp_new );
 
       /* Advance synthesis parameters pointer */
       parm += 5;
@@ -4891,12 +4892,12 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          index = *parm++;
 
          if ( bfi != 0 ) {
-            ec_gain_pitch( st->ec_gain_p_st, st->state, &gain_pit );
+            ec_gain_pitch(&st->ec_gain_p_st, st->state, &gain_pit );
          }
          else {
             gain_pit = d_gain_pitch( mode, index );
          }
-         ec_gain_pitch_update( st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
+         ec_gain_pitch_update(&st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
          decode_10i40_35bits( parm, code );
          parm += 10;
 
@@ -4933,16 +4934,16 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          }
 
          if ( bfi == 0 ) {
-            Dec_gain( st->pred_state, mode, index_mr475, code, evenSubfr, &
+            Dec_gain(&st->pred_state, mode, index_mr475, code, evenSubfr, &
                   gain_pit, &gain_code );
          }
          else {
-            ec_gain_pitch( st->ec_gain_p_st, st->state, &gain_pit );
-            ec_gain_code( st->ec_gain_c_st, st->pred_state, st->state, &
+            ec_gain_pitch(&st->ec_gain_p_st, st->state, &gain_pit );
+            ec_gain_code(&st->ec_gain_c_st, &st->pred_state, st->state, &
                   gain_code );
          }
-         ec_gain_pitch_update( st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
-         ec_gain_code_update( st->ec_gain_c_st, bfi, st->prev_bf, &gain_code );
+         ec_gain_pitch_update(&st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
+         ec_gain_code_update(&st->ec_gain_c_st, bfi, st->prev_bf, &gain_code );
          pit_sharp = gain_pit;
 
          if ( pit_sharp > SHARPMAX ) {
@@ -4955,16 +4956,16 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          index = *parm++;
 
          if ( bfi == 0 ) {
-            Dec_gain( st->pred_state, mode, index, code, evenSubfr, &gain_pit, &
+            Dec_gain(&st->pred_state, mode, index, code, evenSubfr, &gain_pit, &
                   gain_code );
          }
          else {
-            ec_gain_pitch( st->ec_gain_p_st, st->state, &gain_pit );
-            ec_gain_code( st->ec_gain_c_st, st->pred_state, st->state, &
+            ec_gain_pitch(&st->ec_gain_p_st, st->state, &gain_pit );
+            ec_gain_code(&st->ec_gain_c_st, &st->pred_state, st->state, &
                   gain_code );
          }
-         ec_gain_pitch_update( st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
-         ec_gain_code_update( st->ec_gain_c_st, bfi, st->prev_bf, &gain_code );
+         ec_gain_pitch_update( &st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit );
+         ec_gain_code_update( &st->ec_gain_c_st, bfi, st->prev_bf, &gain_code );
          pit_sharp = gain_pit;
 
          if ( pit_sharp > SHARPMAX ) {
@@ -4985,25 +4986,25 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          if ( mode == MR795 ) {
             /* decode pitch gain */
             if ( bfi != 0 ) {
-               ec_gain_pitch( st->ec_gain_p_st, st->state, &gain_pit );
+               ec_gain_pitch( &st->ec_gain_p_st, st->state, &gain_pit );
             }
             else {
                gain_pit = d_gain_pitch( mode, index );
             }
-            ec_gain_pitch_update( st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit
+            ec_gain_pitch_update( &st->ec_gain_p_st, bfi, st->prev_bf, &gain_pit
                   );
 
             /* read and decode code gain */
             index = *parm++;
 
             if ( bfi == 0 ) {
-               d_gain_code( st->pred_state, mode, index, code, &gain_code );
+               d_gain_code( &st->pred_state, mode, index, code, &gain_code );
             }
             else {
-               ec_gain_code( st->ec_gain_c_st, st->pred_state, st->state, &
+               ec_gain_code( &st->ec_gain_c_st, &st->pred_state, st->state, &
                      gain_code );
             }
-            ec_gain_code_update( st->ec_gain_c_st, bfi, st->prev_bf, &gain_code
+            ec_gain_code_update(&st->ec_gain_c_st, bfi, st->prev_bf, &gain_code
                   );
             pit_sharp = gain_pit;
 
@@ -5014,13 +5015,13 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          else {   /* MR122 */
 
             if ( bfi == 0 ) {
-               d_gain_code( st->pred_state, mode, index, code, &gain_code );
+               d_gain_code(&st->pred_state, mode, index, code, &gain_code );
             }
             else {
-               ec_gain_code( st->ec_gain_c_st, st->pred_state, st->state, &
+               ec_gain_code(&st->ec_gain_c_st,&st->pred_state, st->state, &
                      gain_code );
             }
-            ec_gain_code_update( st->ec_gain_c_st, bfi, st->prev_bf, &gain_code
+            ec_gain_code_update(&st->ec_gain_c_st, bfi, st->prev_bf, &gain_code
                   );
             pit_sharp = gain_pit;
          }
@@ -5089,9 +5090,9 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
         /*
          * Calculate CB mixed gain
          */
-      Int_lsf( prev_lsf, st->lsfState->past_lsf_q, i_subfr, lsf_i );
-      gain_code_mix = Cb_gain_average( st->Cb_gain_averState, mode, gain_code,
-            lsf_i, st->lsp_avg_st->lsp_meanSave, bfi, st->prev_bf, pdfi, st->
+      Int_lsf( prev_lsf, st->lsfState.past_lsf_q, i_subfr, lsf_i );
+      gain_code_mix = Cb_gain_average(&st->Cb_gain_averState, mode, gain_code,
+            lsf_i, st->lsp_avg_st.lsp_meanSave, bfi, st->prev_bf, pdfi, st->
             prev_pdf, st->inBackgroundNoise, st->voicedHangover );
 
       /* make sure that MR74, MR795, MR122 have original codeGain*/
@@ -5141,7 +5142,7 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
        */
 
       /* free phase dispersion adaption */
-      st->ph_disp_st->lockFull = 0;
+      st->ph_disp_st.lockFull = 0;
 
       if ( ( ( mode == MR475 ) || ( mode == MR515 ) || ( mode == MR59 ) ) & ( st
             ->voicedHangover > 3 ) & ( st->inBackgroundNoise != 0 ) & ( bfi != 0
@@ -5150,14 +5151,14 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
             * Always Use full Phase Disp.
             * if error in bg noise
             */
-         st->ph_disp_st->lockFull = 1;
+         st->ph_disp_st.lockFull = 1;
       }
 
         /*
          * apply phase dispersion to innovation (if enabled) and
          * compute total excitation for synthesis part
          */
-      ph_disp( st->ph_disp_st, mode, exc_enhanced, gain_code_mix, gain_pit, code
+      ph_disp(&st->ph_disp_st, mode, exc_enhanced, gain_code_mix, gain_pit, code
             , pitch_fac, tmp_shift );
 
         /*
@@ -5253,10 +5254,9 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
      * Call the Source Characteristic Detector which updates
      * st->inBackgroundNoise and st->voicedHangover.
      */
-   st->inBackgroundNoise = Bgn_scd( st->background_state, &( st->ltpGainHistory[
+   st->inBackgroundNoise = Bgn_scd(&st->background_state, &( st->ltpGainHistory[
          0] ), &( synth[0] ), &( st->voicedHangover ) );
-   dtx_dec_activity_update( st->dtxDecoderState, st->lsfState->past_lsf_q, synth
-         );
+   dtx_dec_activity_update(&st->dtxDecoderState, st->lsfState.past_lsf_q, synth);
 
    /* store bfi for next subframe */
    st->prev_bf = bfi;
@@ -5266,9 +5266,9 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
      * Calculate the LSF averages on the eight
      * previous frames
      */
-   lsp_avg( st->lsp_avg_st, st->lsfState->past_lsf_q );
+   lsp_avg( &st->lsp_avg_st, st->lsfState.past_lsf_q );
 theEnd:
-   st->dtxDecoderState->dtxGlobalState = newDTXState;
+   st->dtxDecoderState.dtxGlobalState = newDTXState;
    return;
 }
 
@@ -5569,7 +5569,7 @@ static void Post_Filter( Post_FilterState *st, enum Mode mode, Word32 *syn,
       }
 
       /* scale output to input */
-      agc( st->agc_state, &syn_work[i_subfr], &syn[i_subfr], AGC_FAC );
+      agc( &st->agc_state, &syn_work[i_subfr], &syn[i_subfr], AGC_FAC );
       Az += MP1;
    }
 
@@ -5673,13 +5673,13 @@ void Speech_Decode_Frame( void *st, enum Mode mode, Word16 *parm, enum
    Word32 i;
 
    /* Synthesis */
-   Decoder_amr( ( ( Speech_Decode_FrameState * ) st )->decoder_amrState, mode,
+   Decoder_amr( &( ( Speech_Decode_FrameState * ) st )->decoder_amrState, mode,
          parm, frame_type, synth_speech, Az_dec );
-   Post_Filter( ( ( Speech_Decode_FrameState * ) st )->post_state, mode,
+   Post_Filter( &( ( Speech_Decode_FrameState * ) st )->post_state, mode,
          synth_speech, Az_dec );
 
    /* post HP filter, and 15->16 bits */
-   Post_Process( ( ( Speech_Decode_FrameState * ) st )->postHP_state,
+   Post_Process( &( ( Speech_Decode_FrameState * ) st )->postHP_state,
          synth_speech );
 
 for ( i = 0; i < L_FRAME; i++ ) {
@@ -5694,67 +5694,6 @@ for ( i = 0; i < L_FRAME; i++ ) {
 
    return;
 }
-
-
-/*
- * Decoder_amr_exit
- *
- *
- * Parameters:
- *    state                I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-static void Decoder_amr_exit( Decoder_amrState **state )
-{
-   if ( state == NULL || *state == NULL )
-      return;
-   free( ( *state )->lsfState );
-   free( ( *state )->ec_gain_p_st );
-   free( ( *state )->ec_gain_c_st );
-   free( ( *state )->pred_state );
-   free( ( *state )->background_state );
-   free( ( *state )->ph_disp_st );
-   free( ( *state )->Cb_gain_averState );
-   free( ( *state )->lsp_avg_st );
-   free( ( *state )->dtxDecoderState );
-
-   /* deallocate memory */
-   free( *state );
-   *state = NULL;
-   return;
-}
-
-
-/*
- * Post_Filter_exit
- *
- *
- * Parameters:
- *    state                I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-static void Post_Filter_exit( Post_FilterState **state )
-{
-   if ( state == NULL || *state == NULL )
-      return;
-   free( ( *state )->agc_state );
-
-   /* deallocate memory */
-   free( *state );
-   *state = NULL;
-   return;
-}
-
 
 /*
  * Post_Process_reset
@@ -5823,102 +5762,9 @@ static void Post_Process_exit( Post_ProcessState **state )
  * Returns:
  *    success = 0
  */
-static int Decoder_amr_init( Decoder_amrState **state )
+static int Decoder_amr_init( Decoder_amrState *state )
 {
-   Decoder_amrState * s;
-
-   if ( ( Decoder_amrState * )state == NULL ) {
-      fprintf( stderr, "Decoder_amr_init: invalid parameter\n" );
-      return-1;
-   }
-   *state = NULL;
-
-   /* allocate memory */
-   if ( ( s = ( Decoder_amrState * ) malloc( sizeof( Decoder_amrState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "Decoder_amr_init: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* DPlsf_init */
-   /* allocate memory */
-   if ( ( s->lsfState = ( D_plsfState * ) malloc( sizeof( D_plsfState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "DPlsf_init: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* ecGainPitchInit */
-   /* allocate memory */
-   if ( ( s->ec_gain_p_st = ( ec_gain_pitchState * ) malloc( sizeof(
-         ec_gain_pitchState ) ) ) == NULL ) {
-      fprintf( stderr, "ecGainPitchInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* ecGainCodeInit */
-   /* allocate memory */
-   if ( ( s->ec_gain_c_st = ( ec_gain_codeState * ) malloc( sizeof(
-         ec_gain_codeState ) ) ) == NULL ) {
-      fprintf( stderr, "ecGainCodeInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* gcPredInit */
-   /* allocate memory */
-   if ( ( s->pred_state = ( gc_predState * ) malloc( sizeof( gc_predState ) ) )
-         == NULL ) {
-      fprintf( stderr, "gcPredInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* Cb_gain_averageInit */
-   /* allocate memory */
-   if ( ( s->Cb_gain_averState = ( Cb_gain_averageState * ) malloc( sizeof(
-         Cb_gain_averageState ) ) ) == NULL ) {
-      fprintf( stderr, "Cb_gain_averageInit: can not malloc state structure\n" )
-      ;
-      return-1;
-   }
-   memset( s->Cb_gain_averState->cbGainHistory, 0, L_CBGAINHIST <<2 );
-
-   /* Initialize hangover handling */
-   s->Cb_gain_averState->hangVar = 0;
-   s->Cb_gain_averState->hangCount = 0;
-
-   /* lsp_avgInit */
-   /* allocate memory */
-   if ( ( s->lsp_avg_st = ( lsp_avgState * ) malloc( sizeof( lsp_avgState ) ) )
-         == NULL ) {
-      fprintf( stderr, "lsp_avgInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* Bgn_scdInit */
-   /* allocate memory */
-   if ( ( s->background_state = ( Bgn_scdState * ) malloc( sizeof( Bgn_scdState
-         ) ) ) == NULL ) {
-      fprintf( stderr, "Bgn_scdInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* phDispInit */
-   /* allocate memory */
-   if ( ( s->ph_disp_st = ( ph_dispState * ) malloc( sizeof( ph_dispState ) ) )
-         == NULL ) {
-      fprintf( stderr, "phDispInit: can not malloc state structure\n" );
-      return-1;
-   }
-
-   /* dtxDecInit */
-   /* allocate memory */
-   if ( ( s->dtxDecoderState = ( dtx_decState * ) malloc( sizeof( dtx_decState )
-         ) ) == NULL ) {
-      fprintf( stderr, "dtxDecInit: can not malloc state structure\n" );
-      return-1;
-   }
-   Decoder_amr_reset( s, 0 );
-   *state = s;
+   Decoder_amr_reset(state, 0);
    return 0;
 }
 
@@ -5938,12 +5784,8 @@ static int Decoder_amr_init( Decoder_amrState **state )
  */
 static int Post_Filter_reset( Post_FilterState *state )
 {
-   if ( ( Post_FilterState * )state == NULL ) {
-      fprintf( stderr, "Post_Filter_reset: invalid parameter\n" );
-      return-1;
-   }
    state->preemph_state_mem_pre = 0;
-   state->agc_state->past_gain = 4096;
+   state->agc_state.past_gain = 4096;
    memset( state->mem_syn_pst, 0, M <<2 );
    memset( state->res2, 0, L_SUBFR <<2 );
    memset( state->synth_buf, 0, ( L_FRAME + M )<<2 );
@@ -5964,32 +5806,9 @@ static int Post_Filter_reset( Post_FilterState *state )
  * Returns:
  *    success = 0
  */
-static int Post_Filter_init( Post_FilterState **state )
+static int Post_Filter_init(Post_FilterState* state)
 {
-   Post_FilterState * s;
-
-   if ( ( Post_FilterState * )state == NULL ) {
-      fprintf( stderr, "F057:invalid parameter\n" );
-      return-1;
-   }
-   *state = NULL;
-
-   /* allocate memory */
-   if ( ( s = ( Post_FilterState * ) malloc( sizeof( Post_FilterState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "F057:can not malloc filter structure\n" );
-      return-1;
-   }
-   s->agc_state = NULL;
-
-   /* allocate memory */
-   if ( ( s->agc_state = ( agcState * ) malloc( sizeof( agcState ) ) ) == NULL )
-   {
-      fprintf( stderr, "agcInit: can not malloc state structure\n" );
-      return-1;
-   }
-   Post_Filter_reset( s );
-   *state = s;
+   Post_Filter_reset(state);
    return 0;
 }
 
@@ -6007,24 +5826,9 @@ static int Post_Filter_init( Post_FilterState **state )
  * Returns:
  *    success = 0
  */
-static int Post_Process_init( Post_ProcessState **state )
+static int Post_Process_init( Post_ProcessState *state )
 {
-   Post_ProcessState * s;
-
-   if ( ( Post_ProcessState * )state == NULL ) {
-      fprintf( stderr, "Post_Process_init: invalid parameter\n" );
-      return-1;
-   }
-   *state = NULL;
-
-   /* allocate memory */
-   if ( ( s = ( Post_ProcessState * ) malloc( sizeof( Post_ProcessState ) ) ) ==
-         NULL ) {
-      fprintf( stderr, "Post_Process_init: can not malloc state structure\n" );
-      return-1;
-   }
-   Post_Process_reset( s );
-   *state = s;
+   Post_Process_reset(state);
    return 0;
 }
 
@@ -6044,14 +5848,6 @@ static int Post_Process_init( Post_ProcessState **state )
  */
 void Speech_Decode_Frame_exit( void **st )
 {
-   if ( (( Speech_Decode_FrameState * )( st )) == NULL )
-      return;
-   Decoder_amr_exit( &( ( ( Speech_Decode_FrameState * ) st )->decoder_amrState
-         ) );
-   Post_Filter_exit( &( ( ( Speech_Decode_FrameState * ) st )->post_state ) );
-   Post_Process_exit( &( ( ( Speech_Decode_FrameState * ) st )->postHP_state ) )
-   ;
-
    /* deallocate memory */
    free( (( Speech_Decode_FrameState * )st) );
    return;
@@ -6078,9 +5874,9 @@ int Speech_Decode_Frame_reset( void **st )
    if ( st == NULL || *st == NULL )
       return (-1);
    state = ( Speech_Decode_FrameState * )st;
-   Decoder_amr_reset( state->decoder_amrState, ( enum Mode ) 0 );
-   Post_Filter_reset( state->post_state );
-   Post_Process_reset( state->postHP_state );
+   Decoder_amr_reset(&state->decoder_amrState, ( enum Mode ) 0 );
+   Post_Filter_reset(&state->post_state );
+   Post_Process_reset(&state->postHP_state );
    return 0;
 }
 
@@ -6109,11 +5905,8 @@ void * Speech_Decode_Frame_init( )
             "structure\n" );
       return NULL;
    }
-   s->decoder_amrState = NULL;
-   s->post_state = NULL;
-   s->postHP_state = NULL;
 
-   if ( Decoder_amr_init( &s->decoder_amrState ) || Post_Filter_init( &s->
+   if ( Decoder_amr_init( &s->decoder_amrState ) || Post_Filter_init(&s->
          post_state ) || Post_Process_init( &s->postHP_state ) ) {
       Speech_Decode_Frame_exit( ( void ** )( &s ) );
       return NULL;
