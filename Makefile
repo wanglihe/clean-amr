@@ -44,10 +44,27 @@ AMRWB_SRCS =\
 	$(AMRWBDIR)/if_rom.c
 
 CLAMR_SRCS=\
-    $(CLAMRDIR)/sp_enc.c\
-    $(CLAMRDIR)/interf_enc.c\
-    $(CLAMRDIR)/sp_dec.c \
-    $(CLAMRDIR)/interf_dec.c
+	$(CLAMRDIR)/sp_enc.c\
+	$(CLAMRDIR)/interf_enc.c\
+	$(CLAMRDIR)/sp_dec.c\
+	$(CLAMRDIR)/interf_dec.c\
+	$(CLAMRDIR)/dec_acelp.c\
+	$(CLAMRDIR)/dec_dtx.c\
+	$(CLAMRDIR)/dec_gain.c\
+	$(CLAMRDIR)/dec_if.c\
+	$(CLAMRDIR)/dec_lpc.c\
+	$(CLAMRDIR)/dec_main.c\
+	$(CLAMRDIR)/dec_rom.c\
+	$(CLAMRDIR)/dec_util.c\
+	$(CLAMRDIR)/enc_acelp.c\
+	$(CLAMRDIR)/enc_dtx.c\
+	$(CLAMRDIR)/enc_gain.c\
+	$(CLAMRDIR)/enc_if.c\
+	$(CLAMRDIR)/enc_lpc.c\
+	$(CLAMRDIR)/enc_main.c\
+	$(CLAMRDIR)/enc_rom.c\
+	$(CLAMRDIR)/enc_util.c\
+	$(CLAMRDIR)/if_rom.c
 
 
 AMRNB_OBJS=$(AMRNB_SRCS:.c=.o)
@@ -58,21 +75,27 @@ CLAMR_OBJS=$(CLAMR_SRCS:.c=.o)
 ALL_SRCS=$(AMRNB_SRCS) $(AMRWB_SRCS) $(CLAMR_SRCS)
 ALL_OBJS=$(AMRNB_OBJS) $(AMRWB_OBJS) $(CLAMR_OBJS)
 
-all: $(ALL_OBJS) c3gnb.o cclnb.o c3gwb.o
+all: $(ALL_OBJS) c3gnb.o cclnb.o c3gwb.o cclwb.o
 
-check: clean c3gnb cclnb c3gwb
+check: c3gnb cclnb c3gwb cclwb
 	./c3gnb
 	./cclnb
-	md5sum *.orig
-	md5sum *.amrnb
-	md5sum *.back
 	./c3gwb
+	./cclwb
+	md5sum c3gnb.orig cclnb.orig
+	md5sum c3gnb.amrnb cclnb.amrnb
+	md5sum c3gnb.back cclnb.back
+	md5sum c3gwb.orig cclwb.orig
+	md5sum c3gwb.amrwb cclwb.amrwb
+	md5sum c3gwb.back cclwb.back
 
 c3gnb: c3gnb.o $(AMRNB_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 cclnb: cclnb.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 c3gwb: c3gwb.o $(AMRWB_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
+cclwb: cclwb.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
 
@@ -90,7 +113,8 @@ clean:
 	rm -f c3gnb
 	rm -f cclnb
 	rm -f c3gwb
-	rm -f *.orig *.amrnb *.back
+	rm -f cclwb
+	rm -f *.orig *.amrnb *.amrwb *.back
 
 c3gnb.o: c3gnb.c $(AMRNBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
@@ -98,4 +122,6 @@ cclnb.o: cclnb.c $(CLAMRDIR)/typedef.h
 	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
 c3gwb.o: c3gwb.c $(AMRWBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPWB) $< -o $@
+cclwb.o: cclwb.c $(CLAMRDIR)/typedef.h
+	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
 
