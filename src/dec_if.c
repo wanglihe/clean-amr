@@ -26,14 +26,6 @@
 #define MRNO_DATA    15
 #define EHF_MASK     (Word16)0x0008 /* homing frame pattern */
 
-typedef struct
-{
-   Word16 reset_flag_old;     /* previous was homing frame  */
-   Word16 prev_ft;            /* previous frame type        */
-   Word16 prev_mode;          /* previous mode              */
-   void *decoder_state;       /* Points decoder state       */
-} WB_dec_if_state;
-
 Word16 nb_of_param_first[NUM_OF_SPMODES]=
 {
 	9,  14, 15,
@@ -454,7 +446,7 @@ Word16 D_IF_mms_conversion(Word16 *param, UWord8 *stream, UWord8 *frame_type,
  * Returns:
  *
  */
-void D_IF_decode( void *st, UWord8 *bits, Word16 *synth, Word32 lfi)
+void D_IF_decode(WB_dec_if_state* s, UWord8 *bits, Word16 *synth, Word32 lfi)
 {
    Word32 i;
    Word16 mode = 0;                 /* AMR mode                */
@@ -465,9 +457,6 @@ void D_IF_decode( void *st, UWord8 *bits, Word16 *synth, Word32 lfi)
 
    UWord8 frame_type;               /* frame type              */
    Word16 reset_flag = 0;           /* reset flag              */
-   WB_dec_if_state * s;             /* pointer to structure    */
-
-   s = (WB_dec_if_state*)st;
 
    /* bits -> param, if needed */
    if ((lfi == _good_frame) | (lfi == _bad_frame))
@@ -521,7 +510,7 @@ void D_IF_decode( void *st, UWord8 *bits, Word16 *synth, Word32 lfi)
    }
    else
    {
-      D_MAIN_decode(mode, prm, synth, s->decoder_state, frame_type);
+      D_MAIN_decode(mode, prm, synth, &s->decoder_state, frame_type);
    }
 
    for (i = 0; i < L_FRAME16k; i++)   /* Delete the 2 LSBs (14-bit input) */
@@ -538,7 +527,7 @@ void D_IF_decode( void *st, UWord8 *bits, Word16 *synth, Word32 lfi)
    /* reset decoder if current frame is a homing frame */
    if (reset_flag != 0)
    {
-      D_MAIN_reset(s->decoder_state, 1);
+      D_MAIN_reset(&s->decoder_state, 1);
    }
    s->reset_flag_old = reset_flag;
 
@@ -576,48 +565,8 @@ void D_IF_reset(WB_dec_if_state *st)
  * Returns:
  *    pointer to encoder interface structure
  */
-void *D_IF_init( void)
+void D_IF_init(WB_dec_if_state* state)
 {
-   WB_dec_if_state *s = NULL;
-
-   /* allocate memory */
-   if ((s = (WB_dec_if_state*) malloc(sizeof(WB_dec_if_state))) == NULL)
-   {
-      return NULL;
-   }
-
-   D_MAIN_init(&(s->decoder_state));
-   if (s->decoder_state == NULL)
-   {
-      free(s);
-      return NULL;
-   }
-
-   D_IF_reset(s);
-
-   return s;
-}
-
-/*
- * D_IF_exit
- *
- * Parameters:
- *    state             I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-void D_IF_exit(void *state)
-{
-   WB_dec_if_state *s;
-
-   s = (WB_dec_if_state *)state;
-
-   /* free memory */
-   D_MAIN_close(&s->decoder_state);
-   free(s);
-   state = NULL;
+   D_MAIN_init(&state->decoder_state);
+   D_IF_reset(state);
 }

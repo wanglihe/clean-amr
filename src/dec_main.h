@@ -47,7 +47,7 @@ typedef struct
    Word16 mem_T0;                   /* old pitch lag                       */
    Word16 mem_T0_frac;              /* old pitch fraction lag              */
    UWord16 mem_vad_hist;            /* VAD history                         */
-   D_DTX_State *dtx_decSt;
+   D_DTX_State dtx_decSt;
    UWord8 mem_bfi;                  /* Previous BFI                        */
    UWord8 mem_state;                /* BGH state machine memory            */
    UWord8 mem_first_frame;          /* First frame indicator               */

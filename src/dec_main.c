@@ -63,13 +63,10 @@ extern const Word16 D_ROM_interpol_frac[];
  * Returns:
  *    void
  */
-void D_MAIN_reset(void *st, Word16 reset_all)
+void D_MAIN_reset(Decoder_State* dec_state, Word16 reset_all)
 {
    Word32 i;
 
-   Decoder_State *dec_state;
-
-   dec_state = (Decoder_State*)st;
    memset(dec_state->mem_exc, 0, (PIT_MAX + L_INTERPOL) * sizeof(Word16));
    memset(dec_state->mem_isf_q, 0, M * sizeof(Word16));
    dec_state->mem_T0_frac = 0;   /* old pitch value = 64.0 */
@@ -118,7 +115,7 @@ void D_MAIN_reset(void *st, Word16 reset_all)
       memset(dec_state->mem_syn_hf, 0, M16k * sizeof(Word16));
       memset(dec_state->mem_syn_hi, 0, M * sizeof(Word16));
       memset(dec_state->mem_syn_lo, 0, M * sizeof(Word16));
-      D_DTX_reset(dec_state->dtx_decSt, D_ROM_isf);
+      D_DTX_reset(&dec_state->dtx_decSt, D_ROM_isf);
       dec_state->mem_vad_hist = 0;
    }
 
@@ -139,48 +136,11 @@ void D_MAIN_reset(void *st, Word16 reset_all)
  * Returns:
  *    return zero if succesful
  */
-Word32 D_MAIN_init(void **spd_state)
+Word32 D_MAIN_init(Decoder_State* spd_state)
 {
-   /* Decoder states */
-   Decoder_State *st;
-
-   *spd_state = NULL;
-
-   /*
-    * Memory allocation for coder state.
-    */
-   if((st = (Decoder_State*)malloc(sizeof(Decoder_State))) == NULL)
-   {
-      return(-1);
-   }
-
-   st->dtx_decSt = NULL;
-   D_DTX_init(&st->dtx_decSt, D_ROM_isf);
-   D_MAIN_reset((void *)st, 1);
-   *spd_state = (void *)st;
-
-   return(0);
-}
-
-
-/*
- * Decoder_close
- *
- * Parameters:
- *    spd_state   I: pointer to state structure
- *
- * Function:
- *    Free coder memory.
- *
- * Returns:
- *    void
- */
-void D_MAIN_close(void **spd_state)
-{
-   D_DTX_exit(&(((Decoder_State *)(*spd_state))->dtx_decSt));
-   free(*spd_state);
-
-   return;
+   D_DTX_init(&spd_state->dtx_decSt, D_ROM_isf);
+   D_MAIN_reset(spd_state, 1);
+   return 0;
 }
 
 
@@ -201,7 +161,7 @@ void D_MAIN_close(void **spd_state)
  *    0 if successful
  */
 Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
-                     void *spd_state, UWord8 frame_type)
+                     Decoder_State* st, UWord8 frame_type)
 {
 
    Word32 code2[L_SUBFR];           /* algebraic codevector                */
@@ -228,18 +188,16 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
    Word16 *p_Aq;                    /* ptr to A(z) for the 4 subframes     */
    Word16 *p_isf;                   /* prt to isf                          */
 
-   Decoder_State *st;   /* Decoder states */
    UWord8 newDTXState, bfi, unusable_frame;
    UWord8 vad_flag;
 
-   st = (Decoder_State*)spd_state;
 
    /* find the new  DTX state  SPEECH OR DTX */
-   newDTXState = D_DTX_rx_handler(st->dtx_decSt, frame_type);
+   newDTXState = D_DTX_rx_handler(&st->dtx_decSt, frame_type);
 
    if(newDTXState != SPEECH)
    {
-      D_DTX_exe(st->dtx_decSt, exc2, newDTXState, isf, &prms);
+      D_DTX_exe(&st->dtx_decSt, exc2, newDTXState, isf, &prms);
    }
 
    /* SPEECH action state machine  */
@@ -288,12 +246,12 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
     * possible (the decoder output in this case is quickly muted)
     */
 
-   if(st->dtx_decSt->mem_dtx_global_state == DTX)
+   if(st->dtx_decSt.mem_dtx_global_state == DTX)
    {
       st->mem_state = 5;
       st->mem_bfi = 0;
    }
-   else if(st->dtx_decSt->mem_dtx_global_state == D_DTX_MUTE)
+   else if(st->dtx_decSt.mem_dtx_global_state == D_DTX_MUTE)
    {
       st->mem_state = 5;
       st->mem_bfi = 1;
@@ -308,7 +266,7 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
 		   if(vad_flag == 0)
 		   {
 			   st->mem_vad_hist = (Word16)(st->mem_vad_hist + 1);
-			   st->dtx_decSt->mem_dtx_vad_hist = (Word16)(st->dtx_decSt->mem_dtx_vad_hist + 1);
+			   st->dtx_decSt.mem_dtx_vad_hist = (Word16)(st->dtx_decSt.mem_dtx_vad_hist + 1);
 
 			   if(st->mem_vad_hist > 32767)
 			   {
@@ -318,17 +276,17 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
 		   else
 		   {
 			   st->mem_vad_hist = 0;
-			   st->dtx_decSt->mem_dtx_vad_hist = 0;
+			   st->dtx_decSt.mem_dtx_vad_hist = 0;
 		   }
 	   }
-	   else if (st->dtx_decSt->mem_dtx_vad_hist > 0)
+	   else if (st->dtx_decSt.mem_dtx_vad_hist > 0)
 	   {
-		   st->dtx_decSt->mem_dtx_vad_hist = (Word16)(st->dtx_decSt->mem_dtx_vad_hist + 1);
+		   st->dtx_decSt.mem_dtx_vad_hist = (Word16)(st->dtx_decSt.mem_dtx_vad_hist + 1);
 	   }
 
-	   if (st->dtx_decSt->mem_dtx_vad_hist > 32767)
+	   if (st->dtx_decSt.mem_dtx_vad_hist > 32767)
 	   {
-		   st->dtx_decSt->mem_dtx_vad_hist = 32767;
+		   st->dtx_decSt.mem_dtx_vad_hist = 32767;
 	   }
    }
 
@@ -364,7 +322,7 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
       D_MAIN_reset(st, 0);
       memcpy(st->mem_isf, isf, M * sizeof(Word16));
       st->mem_bfi = bfi;
-      st->dtx_decSt->mem_dtx_global_state = (UWord8)newDTXState;
+      st->dtx_decSt.mem_dtx_global_state = (UWord8)newDTXState;
 
       return(0);
    }
@@ -973,8 +931,8 @@ Word32 D_MAIN_decode(Word16 mode, Word16 prms[], Word16 synth16k[],
 
    memmove(st->mem_exc, &st->mem_exc[L_FRAME], (PIT_MAX + L_INTERPOL) * sizeof(Word16));
    D_UTIL_signal_down_scale(exc, L_FRAME, Q_new);
-   D_DTX_activity_update(st->dtx_decSt, isf, exc);
-   st->dtx_decSt->mem_dtx_global_state = (UWord8)newDTXState;
+   D_DTX_activity_update(&st->dtx_decSt, isf, exc);
+   st->dtx_decSt.mem_dtx_global_state = (UWord8)newDTXState;
    st->mem_bfi = bfi;
 
    return(0);

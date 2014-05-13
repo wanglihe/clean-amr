@@ -39,9 +39,8 @@ typedef struct {
 
 } D_DTX_State;
 
-int D_DTX_init(D_DTX_State **st, const Word16 *isf_init);
+int D_DTX_init(D_DTX_State *st, const Word16 *isf_init);
 int D_DTX_reset(D_DTX_State *st, const Word16 *isf_init);
-void D_DTX_exit(D_DTX_State **st);
 UWord8 D_DTX_rx_handler(D_DTX_State *st, UWord8 frame_type);
 void D_DTX_exe(D_DTX_State *st, Word16 *exc2, Word16 new_state,
                Word16 isf[], Word16 **prms);

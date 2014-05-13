@@ -46,10 +46,6 @@ int D_DTX_reset(D_DTX_State *st, const Word16 *isf_init)
 {
    Word32 i;
 
-   if(st == (D_DTX_State*)NULL)
-   {
-      return(-1);
-   }
    st->mem_since_last_sid = 0;
    st->mem_true_sid_period_inv = (1 << 13);   /* 0.25 in Q15 */
    st->mem_log_en = 3500;
@@ -95,54 +91,10 @@ int D_DTX_reset(D_DTX_State *st, const Word16 *isf_init)
  * Returns:
  *    non-zero with error, zero for ok
  */
-int D_DTX_init(D_DTX_State **st, const Word16 *isf_init)
+int D_DTX_init(D_DTX_State *st, const Word16 *isf_init)
 {
-   D_DTX_State *s;
-
-   if(st == (D_DTX_State**)NULL)
-   {
-      return(-1);
-   }
-
-   *st = NULL;
-
-   /* allocate memory */
-   if((s = (D_DTX_State*)malloc(sizeof(D_DTX_State))) == NULL)
-   {
-      return(-1);
-   }
-
-   D_DTX_reset(s, isf_init);
-   *st = s;
-
-   return(0);
-}
-
-
-/*
- * D_DTX_exit
- *
- * Parameters:
- *    state        I/0: State struct
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    void
- */
-void D_DTX_exit(D_DTX_State **st)
-{
-   if(st == NULL || *st == NULL)
-   {
-      return;
-   }
-
-   /* deallocate memory */
-   free(*st);
-   *st = NULL;
-
-   return;
+   D_DTX_reset(st, isf_init);
+   return 0;
 }
 
 
@@ -245,7 +197,7 @@ UWord8 D_DTX_rx_handler(D_DTX_State *st, UWord8 frame_type)
    st->mem_dtx_hangover_added = 0;
 
    if((frame_type == RX_SID_FIRST) | (frame_type == RX_SID_UPDATE) |
-	   (frame_type == RX_SID_BAD) | 
+	   (frame_type == RX_SID_BAD) |
 	   ((frame_type == RX_NO_DATA) && ((st->mem_dtx_global_state != SPEECH) ||
 	   (st->mem_dtx_vad_hist >= D_DTX_HANG_CONST))))
 
@@ -669,7 +621,7 @@ void D_DTX_exe(D_DTX_State *st, Word16 *exc2, Word16 new_state, Word16 isf[],
 
       /* safety guard against division by zero */
 	  if(tmp_int_length <= 0) {
-         tmp_int_length = 8; 
+         tmp_int_length = 8;
       }
       st->mem_true_sid_period_inv = D_UTIL_saturate((0x02000000 / (tmp_int_length << 10)));
       st->mem_since_last_sid = 0;

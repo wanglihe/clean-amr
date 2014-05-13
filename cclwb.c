@@ -37,7 +37,8 @@ int main() {
     int dtx = 0;
     WB_enc_if_state enstate;
     E_IF_init(&enstate);
-    void* destate = D_IF_init();
+    WB_dec_if_state destate;
+    D_IF_init(&destate);
 
     FILE* pcm_orig = fopen("cclwb.orig", "wb");
     FILE* amrwb = fopen("cclwb.amrwb", "wb");
@@ -60,11 +61,10 @@ int main() {
         /*printf("test times: %d, bytes: %d\n", i, byte_counter);*/
         Word16 dec_mode = (serial_data[0] >> 3) & 0x0F;
         int read_size = block_size[dec_mode];
-        D_IF_decode(destate, serial_data, speech, 0);
+        D_IF_decode(&destate, serial_data, speech, 0);
         fwrite(speech, sizeof(short int), 320, pcm_back);
         /*printf("test times: %d, bytes: %d\n", i, read_size);*/
     }
-    D_IF_exit(destate);
     fclose(pcm_orig);
     fclose(amrwb);
     fclose(pcm_back);
