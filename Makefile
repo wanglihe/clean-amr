@@ -77,17 +77,21 @@ ALL_OBJS=$(AMRNB_OBJS) $(AMRWB_OBJS) $(CLAMR_OBJS)
 
 all: $(ALL_OBJS) c3gnb.o cclnb.o c3gwb.o cclwb.o
 
-check: c3gnb cclnb c3gwb cclwb
+checknb: c3gnb cclnb
 	./c3gnb
 	./cclnb
-	./c3gwb
-	./cclwb
 	md5sum c3gnb.orig cclnb.orig
 	md5sum c3gnb.amrnb cclnb.amrnb
 	md5sum c3gnb.back cclnb.back
+
+checkwb: c3gwb cclwb
+	./c3gwb
+	./cclwb
 	md5sum c3gwb.orig cclwb.orig
 	md5sum c3gwb.amrwb cclwb.amrwb
 	md5sum c3gwb.back cclwb.back
+
+check: checknb checkwb
 
 c3gnb: c3gnb.o $(AMRNB_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
@@ -109,12 +113,15 @@ $(AMRWBDIR)/%.o: $(AMRWBDIR)/%.c
 	$(CC) -c $(CFLAGS_3GPPWB) $< -o $@
 
 clean:
-	rm -f $(ALL_OBJS)
-	rm -f c3gnb
+	rm -f $(CLAMR_OBJS)
 	rm -f cclnb
-	rm -f c3gwb
 	rm -f cclwb
 	rm -f *.orig *.amrnb *.amrwb *.back
+
+cleanall: clean
+	rm -f $(ALL_OBJS)
+	rm -f c3gnb
+	rm -f c3gwb
 
 c3gnb.o: c3gnb.c $(AMRNBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
