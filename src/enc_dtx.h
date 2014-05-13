@@ -55,16 +55,14 @@ typedef struct {
 
 } E_DTX_Vad_State;
 
-Word32 E_DTX_init(E_DTX_State **st);
+Word32 E_DTX_init(E_DTX_State *st);
 Word32 E_DTX_reset(E_DTX_State *st);
-void E_DTX_exit(E_DTX_State **st);
 void E_DTX_tx_handler(E_DTX_State *st, Word32 vad_flag, Word16 *usedMode);
 void E_DTX_buffer(E_DTX_State *st, Float32 isf_new[], Float32 enr,
                   Word16 codec_mode);
 void E_DTX_exe(E_DTX_State *st, Float32 *exc2, Word16 **pt_prms);
-Word32 E_DTX_vad_init(E_DTX_Vad_State **st);
+Word32 E_DTX_vad_init(E_DTX_Vad_State *st);
 Word32 E_DTX_vad_reset(E_DTX_Vad_State *st);
-void E_DTX_vad_exit(E_DTX_Vad_State **st);
 void E_DTX_pitch_tone_detection(E_DTX_Vad_State *st, Float32 p_gain);
 Word16 E_DTX_vad(E_DTX_Vad_State *st, Float32 in_buf[]);
 

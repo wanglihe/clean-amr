@@ -35,7 +35,8 @@ int main() {
         }
     }
     int dtx = 0;
-    void* enstate = E_IF_init();
+    WB_enc_if_state enstate;
+    E_IF_init(&enstate);
     void* destate = D_IF_init();
 
     FILE* pcm_orig = fopen("cclwb.orig", "wb");
@@ -54,16 +55,15 @@ int main() {
         }
         fwrite(speech, sizeof(short int), 320, pcm_orig);
         unsigned char serial_data[61];
-        int byte_counter = E_IF_encode(enstate, req_mode, speech, serial_data, dtx);
+        int byte_counter = E_IF_encode(&enstate, req_mode, speech, serial_data, dtx);
         fwrite(serial_data, sizeof(char), byte_counter, amrwb);
         /*printf("test times: %d, bytes: %d\n", i, byte_counter);*/
         Word16 dec_mode = (serial_data[0] >> 3) & 0x0F;
         int read_size = block_size[dec_mode];
-	D_IF_decode(destate, serial_data, speech, 0);
+        D_IF_decode(destate, serial_data, speech, 0);
         fwrite(speech, sizeof(short int), 320, pcm_back);
         /*printf("test times: %d, bytes: %d\n", i, read_size);*/
     }
-    E_IF_exit(enstate);
     D_IF_exit(destate);
     fclose(pcm_orig);
     fclose(amrwb);

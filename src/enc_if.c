@@ -38,13 +38,6 @@
 #define T_NBBITS_SID (NBBITS_SID + HEADER_SIZE)
 
 
-typedef struct
-{
-   Word16 sid_update_counter;   /* Number of frames since last SID */
-   Word16 sid_handover_debt;    /* Number of extra SID_UPD frames to schedule */
-   Word16 prev_ft;              /* Type of the previous frame */
-   void *encoder_state;         /* Points encoder state structure */
-} WB_enc_if_state;
 
 
 extern const Word16 mode_7k[];
@@ -528,15 +521,12 @@ static void E_IF_sid_sync_reset(WB_enc_if_state *st)
  * Returns:
  *    number of octets
  */
-int E_IF_encode(void *st, Word16 req_mode, Word16 *speech, UWord8 *serial,
+int E_IF_encode(WB_enc_if_state* s, Word16 req_mode, Word16 *speech, UWord8 *serial,
                 Word16 dtx)
 {
    Word16 prms[NB_PARM_MAX];
    Word32 i;
    Word16 frame_type, mode, reset_flag;
-   WB_enc_if_state *s;
-
-   s = (WB_enc_if_state *)st;
    mode = req_mode;
 
    /* check for homing frame */
@@ -549,7 +539,7 @@ int E_IF_encode(void *st, Word16 req_mode, Word16 *speech, UWord8 *serial,
          speech[i] = (Word16) (speech[i] & 0xfffC);
       }
 
-      E_MAIN_encode(&mode, speech, prms, s->encoder_state, dtx);
+      E_MAIN_encode(&mode, speech, prms, &s->encoder_state, dtx);
 
       if (mode == MRDTX)
       {
@@ -598,7 +588,7 @@ int E_IF_encode(void *st, Word16 req_mode, Word16 *speech, UWord8 *serial,
    /* perform homing if homing frame was detected at encoder input */
    else
    {
-      E_MAIN_reset(s->encoder_state, 1);
+      E_MAIN_reset(&s->encoder_state, 1);
       E_IF_sid_sync_reset(s);
       E_IF_homing_coding(prms, mode);
       frame_type = TX_SPEECH;
@@ -619,47 +609,8 @@ int E_IF_encode(void *st, Word16 req_mode, Word16 *speech, UWord8 *serial,
  * Returns:
  *    pointer to encoder interface structure
  */
-void *E_IF_init(void)
+void E_IF_init(WB_enc_if_state* state)
 {
-   WB_enc_if_state * s;
-
-   /* allocate memory */
-   if ((s = (WB_enc_if_state *)malloc(sizeof(WB_enc_if_state))) == NULL)
-   {
-      return NULL;
-   }
-
-   E_MAIN_init(&(s->encoder_state));
-   if (s->encoder_state == NULL)
-   {
-      free(s);
-      return NULL;
-   }
-
-   E_IF_sid_sync_reset(s);
-
-   return s;
-}
-
-/*
- * E_IF_exit
- *
- * Parameters:
- *    state             I: state structure
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    Void
- */
-void E_IF_exit(void *state)
-{
-   WB_enc_if_state *s;
-   s = (WB_enc_if_state *)state;
-
-   /* free memory */
-   E_MAIN_close(&s->encoder_state);
-   free(s);
-   state = NULL;
+   E_MAIN_init(&state->encoder_state);
+   E_IF_sid_sync_reset(state);
 }

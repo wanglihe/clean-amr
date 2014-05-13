@@ -1225,9 +1225,9 @@ Word32 E_UTIL_enc_synthesis(Float32 Aq[], Float32 exc[], Float32 synth16k[],
    }
 
    HP_calc_gain = (Float32)sqrt(ener /tmp);
-   st->mem_gain_alpha *= st->dtx_encSt->mem_dtx_hangover_count / 7;
+   st->mem_gain_alpha *= st->dtx_encSt.mem_dtx_hangover_count / 7;
 
-   if(st->dtx_encSt->mem_dtx_hangover_count > 6)
+   if(st->dtx_encSt.mem_dtx_hangover_count > 6)
    {
       st->mem_gain_alpha = 1.0F;
    }

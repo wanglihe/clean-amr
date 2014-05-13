@@ -69,13 +69,9 @@ extern const Word16 E_ROM_interpol_frac[];
  * Returns:
  *    void
  */
-void E_MAIN_reset(void *st, Word16 reset_all)
+void E_MAIN_reset(Coder_State* cod_state, Word16 reset_all)
 {
    Word32 i;
-
-   Coder_State *cod_state;
-
-   cod_state = (Coder_State *) st;
 
    memset(cod_state->mem_exc, 0, (PIT_MAX + L_INTERPOL) * sizeof(Word16));
    memset(cod_state->mem_isf_q, 0, M * sizeof(Word16));
@@ -153,8 +149,8 @@ void E_MAIN_reset(void *st, Word16 reset_all)
       cod_state->mem_gain_alpha = 1.0F;
       cod_state->mem_vad_hist = 0;
 
-      E_DTX_reset(cod_state->dtx_encSt);
-      E_DTX_vad_reset(cod_state->vadSt);
+      E_DTX_reset(&cod_state->dtx_encSt);
+      E_DTX_vad_reset(&cod_state->vadSt);
    }
 }
 
@@ -171,52 +167,12 @@ void E_MAIN_reset(void *st, Word16 reset_all)
  * Returns:
  *    void
  */
-Word16 E_MAIN_init(void **spe_state)
+Word16 E_MAIN_init(Coder_State* st)
 {
-   Coder_State *st;
-
-   *spe_state = NULL;
-
-   /* allocate memory */
-   if ((st = (Coder_State *) malloc(sizeof(Coder_State))) == NULL)
-   {
-      return(-1);
-   }
-
-   st->vadSt = NULL;
-   st->dtx_encSt = NULL;
-
-   E_DTX_init(&(st->dtx_encSt));
-   E_DTX_vad_init(&(st->vadSt));
-
-   E_MAIN_reset((void *) st, 1);
-
-   *spe_state = (void*)st;
-
-   return(0);
-}
-
-/*
- * E_MAIN_close
- *
- *
- * Parameters:
- *    spe_state   I: pointer to state structure
- *
- * Function:
- *    Free coder memory.
- *
- *
- * Returns:
- *    void
- */
-void E_MAIN_close(void **spe_state)
-{
-   E_DTX_exit(&( ( (Coder_State *)(*spe_state) )->dtx_encSt));
-   E_DTX_vad_exit(&( ( (Coder_State *) (*spe_state) )->vadSt));
-   free(*spe_state);
-
-   return;
+   E_DTX_init(&st->dtx_encSt);
+   E_DTX_vad_init(&st->vadSt);
+   E_MAIN_reset(st, 1);
+   return 0;
 }
 
 /*
@@ -257,7 +213,7 @@ static void E_MAIN_parm_store(Word32 value, Word16 **prms)
  *    void
  */
 Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
-                    void *spe_state, Word16 allow_dtx)
+                    Coder_State* st, Word16 allow_dtx)
 {
 
    /* Float32 */
@@ -313,9 +269,6 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
    Word16 *exc;                        /* Excitation vector                      */
 
    /* Other */
-   Coder_State *st;                    /* Coder states                           */
-
-   st = (Coder_State *)spe_state;
    codec_mode = *mode;
 
    /*
@@ -386,7 +339,7 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
     *  Vad work slightly in futur (new_speech = speech + L_NEXT - L_FILT).
     */
 
-   vad_flag = E_DTX_vad(st->vadSt, new_speech);
+   vad_flag = E_DTX_vad(&st->vadSt, new_speech);
 
    if (vad_flag == 0)
    {
@@ -401,11 +354,11 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
    if (allow_dtx)
    {
       /* Note that mode may change here */
-      E_DTX_tx_handler(st->dtx_encSt, vad_flag, mode);
+      E_DTX_tx_handler(&st->dtx_encSt, vad_flag, mode);
    }
    else
    {
-      E_DTX_reset(st->dtx_encSt);
+      E_DTX_reset(&st->dtx_encSt);
    }
 
    if(*mode != MRDTX)
@@ -512,7 +465,7 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
       st->mem_ol_wght_flg = 1;
    }
 
-   E_DTX_pitch_tone_detection(st->vadSt, st->mem_ol_gain);
+   E_DTX_pitch_tone_detection(&st->vadSt, st->mem_ol_gain);
 
    T_op *= OPL_DECIM;
 
@@ -543,7 +496,7 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
          st->mem_ol_wght_flg = 1;
       }
 
-      E_DTX_pitch_tone_detection(st->vadSt, st->mem_ol_gain);
+      E_DTX_pitch_tone_detection(&st->vadSt, st->mem_ol_gain);
 
       T_op2 *= OPL_DECIM;
    }
@@ -566,10 +519,10 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
          f_tmp += f_exc[i] * f_exc[i];
       }
 
-      E_DTX_buffer(st->dtx_encSt, isf, f_tmp, codec_mode);
+      E_DTX_buffer(&st->dtx_encSt, isf, f_tmp, codec_mode);
 
       /* Quantize and code the isfs */
-      E_DTX_exe(st->dtx_encSt, f_exc2, &prms);
+      E_DTX_exe(&st->dtx_encSt, f_exc2, &prms);
 
       /* reset speech coder memories */
       E_MAIN_reset(st, 0);
@@ -686,7 +639,7 @@ Word16 E_MAIN_encode(Word16 * mode, Word16 speech16k[], Word16 prms[],
          f_tmp += f_exc[i] * f_exc[i];
       }
 
-      E_DTX_buffer(st->dtx_encSt, isf, f_tmp, codec_mode);
+      E_DTX_buffer(&st->dtx_encSt, isf, f_tmp, codec_mode);
    }
 
    /* range for closed loop pitch search in 1st subframe */

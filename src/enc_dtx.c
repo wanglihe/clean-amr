@@ -588,11 +588,6 @@ Word32 E_DTX_reset(E_DTX_State *st)
 {
    Word32 i;
 
-   if (st == (E_DTX_State *) NULL)
-   {
-      return -1;
-   }
-
    st->mem_hist_ptr = 0;
    st->mem_log_en_index = 0;
 
@@ -628,55 +623,11 @@ Word32 E_DTX_reset(E_DTX_State *st)
  * Returns:
  *    non-zero with error, zero for ok
  */
-Word32 E_DTX_init (E_DTX_State **st)
+Word32 E_DTX_init (E_DTX_State *st)
 {
-   E_DTX_State* s;
-
-   if (st == (E_DTX_State **) NULL)
-   {
-      return -1;
-   }
-
-   *st = NULL;
-
-   /* allocate memory */
-   if ((s= (E_DTX_State *) malloc(sizeof(E_DTX_State))) == NULL)
-   {
-      return -1;
-   }
-
-   E_DTX_reset(s);
-   *st = s;
-
+   E_DTX_reset(st);
    return 0;
 }
-
-/*
- * E_DTX_exit
- *
- * Parameters:
- *    state        I/0: State struct
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    void
- */
-void E_DTX_exit (E_DTX_State **st)
-{
-   if (st == NULL || *st == NULL)
-   {
-      return;
-   }
-
-   /* deallocate memory */
-   free(*st);
-   *st = NULL;
-
-   return;
-}
-
 
 /*
  * E_DTX_tx_handler
@@ -1248,9 +1199,9 @@ static Word16 E_DTX_decision(E_DTX_Vad_State *st, Float32 level[COMPLEN], Float6
       /* avoid log10 error */
       temp -= 1E-8F;
    }
-   
+
    ilog2_noise_level = (Float32)(-1024.0F * log10(noise_level / 2147483648.0F) / log10(2.0F));
-  
+
    /*
     * If SNR is very poor, speech_level is probably corrupted by noise level. This
     * is correctred by subtracting -MIN_SPEECH_SNR*noise_level from speech level
@@ -1399,11 +1350,6 @@ Word32 E_DTX_vad_reset (E_DTX_Vad_State *state)
 {
    Word32 i;
 
-   if (state == (E_DTX_Vad_State *) NULL)
-   {
-      return -1;
-   }
-
    /* Initialize pitch detection variables */
    state->mem_pitch_tone = 0;
    state->mem_vadreg = 0;
@@ -1446,53 +1392,10 @@ Word32 E_DTX_vad_reset (E_DTX_Vad_State *state)
  * Returns:
  *    non-zero with error, zero for ok
  */
-Word32 E_DTX_vad_init (E_DTX_Vad_State **state)
+Word32 E_DTX_vad_init (E_DTX_Vad_State *state)
 {
-   E_DTX_Vad_State* s;
-
-   if (state == (E_DTX_Vad_State **) NULL)
-   {
-      return -1;
-   }
-   *state = NULL;
-
-   /* allocate memory */
-   if ((s = (E_DTX_Vad_State *) malloc(sizeof(E_DTX_Vad_State))) == NULL)
-   {
-      return -1;
-   }
-
-   E_DTX_vad_reset(s);
-
-   *state = s;
-
+   E_DTX_vad_reset(state);
    return 0;
-}
-
-/*
- * E_DTX_vad_exit
- *
- * Parameters:
- *    state        I/0: State struct
- *
- * Function:
- *    The memory used for state memory is freed
- *
- * Returns:
- *    void
- */
-void E_DTX_vad_exit (E_DTX_Vad_State **state)
-{
-   if (state == NULL || *state == NULL)
-   {
-      return;
-   }
-
-   /* deallocate memory */
-   free(*state);
-   *state = NULL;
-
-   return;
 }
 
 /*

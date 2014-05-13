@@ -63,8 +63,8 @@ typedef struct
    Word16 mem_seed;                    /* random memory for HF generation    */
 
    /* other */
-   E_DTX_Vad_State *vadSt;
-   E_DTX_State *dtx_encSt;
+   E_DTX_Vad_State vadSt;
+   E_DTX_State dtx_encSt;
    UWord8 mem_first_frame;             /* First frame indicator              */
    UWord8 mem_ol_wght_flg;             /* switches lag weighting on and off  */
    UWord8 mem_vad_hist;                /* VAD history                        */

@@ -8,11 +8,9 @@
 
 #include "typedef.h"
 
-Word16 E_MAIN_init(void **spe_state);
-void E_MAIN_reset(void *st, Word16 reset_all);
+Word16 E_MAIN_init(Coder_State* st);
+void E_MAIN_reset(Coder_State* cod_state, Word16 reset_all);
 Word16 E_MAIN_encode(Word16 * mode, Word16 input_sp[], Word16 prms[],
-                     void *spe_state, Word16 allow_dtx);
-void E_MAIN_close(void **spe_state);
-
+                     Coder_State* st, Word16 allow_dtx);
 #endif
 
