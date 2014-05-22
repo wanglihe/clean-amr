@@ -10233,7 +10233,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       memset( st->old_exc, 0, ( PIT_MAX + L_INTERPOL )<<2 );
       memset( st->mem_w0, 0, M <<2 );
       memset( st->mem_err, 0, M <<2 );
-      memset( st->zero, 0, L_SUBFR <<2 );
+      memset( &st->ai_zero[st->zero], 0, L_SUBFR <<2 );
       memset( st->hvec, 0, L_SUBFR <<2 );
       memset( st->lspSt.qSt.past_rq, 0, M <<2 );
       memcpy( st->lspSt.lsp_old, lsp_new, M <<2 );
@@ -10341,14 +10341,14 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       /* Preprocessing of subframe */
       if ( *used_mode != MR475 ) {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
-               speech[i_subfr], st->mem_err, st->mem_w0, st->zero, st->ai_zero,
+               speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->ai_zero,
                &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
       }
 
       /* MR475 */
       else {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
-               speech[i_subfr], st->mem_err, mem_w0_save, st->zero, st->ai_zero,
+               speech[i_subfr], st->mem_err, mem_w0_save, &st->ai_zero[st->zero], st->ai_zero,
                &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
 
          if ( evenSubfr != 0 ) {
@@ -10439,7 +10439,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
              * (this also reconstructs the unsharpened h1 for sf 1)
              */
             subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st
-                  ->speech[i_subfr], st->mem_err, st->mem_w0, st->zero, st->
+                  ->speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->
                   ai_zero, &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
 
             /* re-build excitation sf 1 (changed if lag < L_SUBFR) */
@@ -10721,7 +10721,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    /* Initialize static pointers */
    s->wsp = PIT_MAX;
    s->exc = PIT_MAX + L_INTERPOL;
-   s->zero = s->ai_zero + MP1;
+   s->zero = MP1;
    s->error = s->mem_err + M;
    s->h1 = &s->hvec[L_SUBFR];
 

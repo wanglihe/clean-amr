@@ -281,7 +281,7 @@ typedef struct
 
    /* Zero vector */
    Float32 ai_zero[L_SUBFR + MP1];
-   Float32 *zero;
+   UWord16 zero;
 
 
    /* Impulse response vector */
