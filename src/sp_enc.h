@@ -266,7 +266,7 @@ typedef struct
 
    /* Weight speech vector */
    Float32 old_wsp[L_FRAME + PIT_MAX];
-   Float32 *wsp;
+   UWord16 wsp;
 
 
    /* OL LTP states */
@@ -276,7 +276,7 @@ typedef struct
 
    /* Excitation vector */
    Float32 old_exc[L_FRAME + PIT_MAX + L_INTERPOL];
-   Float32 *exc;
+   UWord16 exc;
 
 
    /* Zero vector */
