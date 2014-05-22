@@ -54,8 +54,8 @@ static void Decoder_amr_reset(Decoder_amrState *state, enum Mode mode)
    state->Cb_gain_averState.hangVar = 0;
    state->Cb_gain_averState.hangCount= 0;
 
-   /* Initialize static pointer */
-   state->exc = state->old_exc + PIT_MAX + L_INTERPOL;
+   /* Initialize static position */
+   state->exc = PIT_MAX + L_INTERPOL;
 
    /* Static vectors to zero */
    memset( state->old_exc, 0, ( PIT_MAX + L_INTERPOL )<<2 );
@@ -4625,7 +4625,7 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
                T0 = st->T0_lagBuff;
             }
          }
-         Pred_lt_3or6_40( st->exc, T0, T0_frac, 1 );
+         Pred_lt_3or6_40( &st->old_exc[st->exc], T0, T0_frac, 1 );
       }
       else {
          Dec_lag6( index, PIT_MIN_MR122, PIT_MAX, pit_flag, &T0, &T0_frac );
@@ -4635,7 +4635,7 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
             T0 = st->old_T0;
             T0_frac = 0;
          }
-         Pred_lt_3or6_40( st->exc, T0, T0_frac, 0 );
+         Pred_lt_3or6_40( &st->old_exc[st->exc], T0, T0_frac, 0 );
       }
 
        /*
@@ -4855,7 +4855,7 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
 
       if ( pit_sharp > 16384 ) {
          for ( i = 0; i < L_SUBFR; i++ ) {
-            temp = ( st->exc[i] * pit_sharp ) >> 15;
+            temp = ( st->old_exc[st->exc + i] * pit_sharp ) >> 15;
             temp2 = ( temp * gain_pit ) << 1;
 
             if ( mode == MR122 ) {
@@ -4928,11 +4928,11 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
          * copy unscaled LTP excitation to exc_enhanced (used in phase
          * dispersion below) and compute total excitation for LTP feedback
          */
-      memcpy( exc_enhanced, st->exc, L_SUBFR <<2 );
+      memcpy( exc_enhanced, &st->old_exc[st->exc], L_SUBFR <<2 );
 
       for ( i = 0; i < L_SUBFR; i++ ) {
          /* st->exc[i] = gain_pit*st->exc[i] + gain_code*code[i]; */
-         temp = ( st->exc[i] * pitch_fac ) + ( code[i] * gain_code );
+         temp = ( st->old_exc[st->exc + i] * pitch_fac ) + ( code[i] * gain_code );
          temp2 = ( temp << tmp_shift );
          if (((temp2 >> 1) ^ temp2) & 0x40000000) {
             if ((temp ^ temp2) & 0x80000000) {
@@ -4942,7 +4942,7 @@ static void Decoder_amr( Decoder_amrState *st, enum Mode mode, Word16 parm[],
                temp2 = (temp2 & 0x80000000) ? (-1073741824L) : 1073725439;
             }
          }
-         st->exc[i] = ( temp2 + 0x00004000L ) >> 15;
+         st->old_exc[st->exc + i] = ( temp2 + 0x00004000L ) >> 15;
       }
       /*
        * Adaptive phase dispersion
