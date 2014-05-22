@@ -10342,14 +10342,14 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       if ( *used_mode != MR475 ) {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
                speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->ai_zero,
-               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
+               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
       }
 
       /* MR475 */
       else {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
                speech[i_subfr], st->mem_err, mem_w0_save, &st->ai_zero[st->zero], st->ai_zero,
-               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
+               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
 
          if ( evenSubfr != 0 ) {
             memcpy( h1_sf0, st->h1, L_SUBFR <<2 );
@@ -10440,7 +10440,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
              */
             subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st
                   ->speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->
-                  ai_zero, &st->old_exc[st->exc + i_subfr], st->h1, xn, res, st->error );
+                  ai_zero, &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
 
             /* re-build excitation sf 1 (changed if lag < L_SUBFR) */
             Pred_lt_3or6( &st->old_exc[st->exc + i_subfr], T0, T0_frac, 1 );
@@ -10722,7 +10722,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->wsp = PIT_MAX;
    s->exc = PIT_MAX + L_INTERPOL;
    s->zero = MP1;
-   s->error = s->mem_err + M;
+   s->error = M;
    s->h1 = &s->hvec[L_SUBFR];
 
    /* Static vectors to zero */

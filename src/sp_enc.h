@@ -305,7 +305,8 @@ typedef struct
 
    /* Filter's memory */
    Float32 mem_syn[M], mem_w0[M], mem_w[M];
-   Float32 mem_err[M + L_SUBFR], *error;
+   Float32 mem_err[M + L_SUBFR];
+   UWord16 error;
    Float32 sharp;
 }cod_amrState;
 typedef struct
