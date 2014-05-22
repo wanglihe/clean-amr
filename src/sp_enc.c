@@ -10707,7 +10707,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->dtxEncSt.dtxHangoverCount = DTX_HANG_CONST;
    s->dtxEncSt.decAnaElapsedCount = DTX_ELAPSED_FRAMES_THRESH;
 
-   /* init speech pointers */
+   /* init speech offsets */
    /* New speech */
    s->new_speech = L_TOTAL - L_FRAME;
 
