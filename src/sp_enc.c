@@ -10210,7 +10210,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
     * subframes (both quantized and unquantized).
     */
    /* LP analysis */
-   lpc( st->lpcSt.LevinsonSt.old_A, st->p_window, st->p_window_12k2, A_t, mode
+   lpc( st->lpcSt.LevinsonSt.old_A, &st->old_speech[st->p_window], &st->old_speech[st->p_window_12k2], A_t, mode
          );
 
    /*
@@ -10713,7 +10713,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
 
    /* Present frame */
    s->speech = s->new_speech - L_NEXT;
-   s->p_window = s->old_speech + L_TOTAL - L_WINDOW;
+   s->p_window = L_TOTAL - L_WINDOW;
 
    /* For LPC window				*/
    s->p_window_12k2 = s->p_window - L_NEXT;

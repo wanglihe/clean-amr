@@ -260,7 +260,8 @@ typedef struct
 {
    /* Speech vector */
    Float32 old_speech[L_TOTAL];
-   Float32 *p_window, *p_window_12k2;
+   UWord16 p_window;
+   UWord16 p_window_12k2;
    UWord16 speech;
    UWord16 new_speech;   /* Global variable */
 
