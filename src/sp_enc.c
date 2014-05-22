@@ -10342,17 +10342,17 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       if ( *used_mode != MR475 ) {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
                speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->ai_zero,
-               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
+               &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
       }
 
       /* MR475 */
       else {
          subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
                speech[i_subfr], st->mem_err, mem_w0_save, &st->ai_zero[st->zero], st->ai_zero,
-               &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
+               &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
 
          if ( evenSubfr != 0 ) {
-            memcpy( h1_sf0, st->h1, L_SUBFR <<2 );
+            memcpy( h1_sf0, &st->hvec[st->h1], L_SUBFR <<2 );
          }
       }
 
@@ -10361,7 +10361,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
       /* Closed-loop LTP search */
       cl_ltp( &st->clLtpSt.pitchSt.T0_prev_subframe, st->tonStabSt.gp, *
-            used_mode, i_subfr, T_op, st->h1, &st->old_exc[st->exc + i_subfr], res2, xn,
+            used_mode, i_subfr, T_op, &st->hvec[st->h1], &st->old_exc[st->exc + i_subfr], res2, xn,
             lsp_flag, xn2, y1, &T0, &T0_frac, &gain_pit, gCoeff, &ana, &gp_limit
             );
 
@@ -10375,7 +10375,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       }
 
       /* Innovative codebook search (find index and gain) */
-      cbsearch( *used_mode, subfrNr, xn2, st->h1, T0, st->sharp, gain_pit, code,
+      cbsearch( *used_mode, subfrNr, xn2, &st->hvec[st->h1], T0, st->sharp, gain_pit, code,
             y2, res2, &ana );
 
       /* Quantization of gains. */
@@ -10440,11 +10440,11 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
              */
             subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st
                   ->speech[i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->
-                  ai_zero, &st->old_exc[st->exc + i_subfr], st->h1, xn, res, &st->mem_err[st->error] );
+                  ai_zero, &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
 
             /* re-build excitation sf 1 (changed if lag < L_SUBFR) */
             Pred_lt_3or6( &st->old_exc[st->exc + i_subfr], T0, T0_frac, 1 );
-            Convolve( &st->old_exc[st->exc + i_subfr], st->h1, y1 );
+            Convolve( &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], y1 );
             subframePostProc( st->speech, i_subfr, gain_pit, gain_code, Aq,
                   synth, xn, code, y1, y2, st->mem_syn, st->mem_err, st->mem_w0,
                   &st->old_exc[st->exc], &st->sharp );
@@ -10723,7 +10723,7 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->exc = PIT_MAX + L_INTERPOL;
    s->zero = MP1;
    s->error = M;
-   s->h1 = &s->hvec[L_SUBFR];
+   s->h1 = L_SUBFR;
 
    /* Static vectors to zero */
    memset( s->old_speech, 0, sizeof( Float32 )*L_TOTAL );

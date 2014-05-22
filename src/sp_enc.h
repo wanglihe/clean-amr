@@ -285,7 +285,7 @@ typedef struct
 
 
    /* Impulse response vector */
-   Float32 *h1;
+   UWord16 h1;
    Float32 hvec[L_SUBFR * 2];
 
 
