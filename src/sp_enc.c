@@ -10174,6 +10174,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
    Word16 compute_sid_flag;
    Word16 vad_flag;
 
+   Word16 *gain_idx_ptr = NULL;
 
    memcpy( &st->old_speech[st->new_speech], new_speech, L_FRAME <<2 );
 
@@ -10383,7 +10384,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
             st->gainQuantSt.gc_predUncSt.past_qua_en, st->gainQuantSt.
             sf0_coeff, &st->gainQuantSt.sf0_target_en, &st->gainQuantSt.
             sf0_gcode0_exp, &st->gainQuantSt.
-            sf0_gcode0_fra, &st->gainQuantSt.gain_idx_ptr, &gain_pit_sf0, &
+            sf0_gcode0_fra, &gain_idx_ptr, &gain_pit_sf0, &
             gain_code_sf0, res, &st->old_exc[st->exc + i_subfr], code, xn, xn2, y1, y2, gCoeff
             , gp_limit, &gain_pit, &gain_code, &st->gainQuantSt.adaptSt.
             prev_gc, &st->gainQuantSt.adaptSt.onset, st->gainQuantSt.adaptSt
@@ -10617,7 +10618,6 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->gainQuantSt.sf0_gcode0_fra = 0;
    s->gainQuantSt.sf0_target_en = 0.0F;
    memset( s->gainQuantSt.sf0_coeff, 0, sizeof( Float32 )*5 );
-   s->gainQuantSt.gain_idx_ptr = NULL;
 
    /* reset pitchOLWghtState */
    s->pitchOLWghtSt.old_T0_med = 40;

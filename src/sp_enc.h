@@ -205,8 +205,6 @@ typedef struct
    Float32 sf0_coeff[5];
    Word32 sf0_gcode0_exp;
    Word32 sf0_gcode0_fra;
-   Word16 *gain_idx_ptr;
-
 
    enc_gc_predState gc_predSt;
    enc_gc_predState gc_predUncSt;
