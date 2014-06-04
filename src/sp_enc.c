@@ -10174,17 +10174,18 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
    Word16 compute_sid_flag;
    Word16 vad_flag;
 
+   Word16 *gain_idx_ptr = NULL;
 
-   memcpy( st->new_speech, new_speech, L_FRAME <<2 );
+   memcpy( &st->old_speech[st->new_speech], new_speech, L_FRAME <<2 );
 
    if ( st->dtx ) {
 #ifdef VAD2
      /* Find VAD decision (option 2) */
-     vad_flag = vad2 (&st->vadSt, st->new_speech);
-     vad_flag = vad2 (&st->vadSt, st->new_speech+80) || vad_flag;
+     vad_flag = vad2 (&st->vadSt, &st->old_speech[st->new_speech]);
+     vad_flag = vad2 (&st->vadSt, &st->old_speech[st->new_speech + 80]) || vad_flag;
 #else
       /* Find VAD decision (option 1) */
-      vad_flag = vad( &st->vadSt, st->new_speech );
+      vad_flag = vad( &st->vadSt, &st->old_speech[st->new_speech] );
 #endif
       /* force VAD on   */
       if ( *used_mode < 0 )
@@ -10210,7 +10211,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
     * subframes (both quantized and unquantized).
     */
    /* LP analysis */
-   lpc( st->lpcSt.LevinsonSt.old_A, st->p_window, st->p_window_12k2, A_t, mode
+   lpc( st->lpcSt.LevinsonSt.old_A, &st->old_speech[st->p_window], &st->old_speech[st->p_window_12k2], A_t, mode
          );
 
    /*
@@ -10222,8 +10223,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
          qSt.past_rq, A_t, Aq_t, lsp_new, &ana );
 
    /* Buffer lsp's and energy */
-   dtx_buffer( &st->dtxEncSt.hist_ptr, st->dtxEncSt.lsp_hist, lsp_new, st->
-         new_speech, st->dtxEncSt.log_en_hist );
+   dtx_buffer( &st->dtxEncSt.hist_ptr, st->dtxEncSt.lsp_hist, lsp_new, &st->old_speech[st->
+         new_speech], st->dtxEncSt.log_en_hist );
 
    if ( *used_mode == MRDTX ) {
       dtx_enc( &st->dtxEncSt.log_en_index, st->dtxEncSt.log_en_hist, st->
@@ -10233,7 +10234,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       memset( st->old_exc, 0, ( PIT_MAX + L_INTERPOL )<<2 );
       memset( st->mem_w0, 0, M <<2 );
       memset( st->mem_err, 0, M <<2 );
-      memset( st->zero, 0, L_SUBFR <<2 );
+      memset( &st->ai_zero[st->zero], 0, L_SUBFR <<2 );
       memset( st->hvec, 0, L_SUBFR <<2 );
       memset( st->lspSt.qSt.past_rq, 0, M <<2 );
       memcpy( st->lspSt.lsp_old, lsp_new, M <<2 );
@@ -10261,12 +10262,12 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
        * Pre-processing on 80 samples
        * Find the weighted input speech for the whole speech frame
        */
-      pre_big( mode, gamma1, gamma1_12k2, gamma2, A_t, i_subfr, st->speech, st->
-            mem_w, st->wsp );
+      pre_big( mode, gamma1, gamma1_12k2, gamma2, A_t, i_subfr, &st->old_speech[st->speech], st->
+            mem_w, &st->old_wsp[st->wsp] );
 
       /* Find open loop pitch lag for two subframes */
       if ( ( mode != MR475 ) && ( mode != MR515 ) ) {
-         ol_ltp( mode, &st->vadSt, &st->wsp[i_subfr], &T_op[subfrNr], st->
+         ol_ltp( mode, &st->vadSt, &st->old_wsp[st->wsp + i_subfr], &T_op[subfrNr], st->
                ol_gain_flg, &st->pitchOLWghtSt.old_T0_med, &st->pitchOLWghtSt.
                wght_flg, &st->pitchOLWghtSt.ada_w, st->old_lags, st->dtx,
                subfrNr );
@@ -10278,7 +10279,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
        * Find open loop pitch lag for ONE FRAME ONLY
        * search on 160 samples
        */
-      ol_ltp( mode, &st->vadSt, &st->wsp[0], &T_op[0], st->ol_gain_flg, &st->
+      ol_ltp( mode, &st->vadSt, &st->old_wsp[st->wsp], &T_op[0], st->ol_gain_flg, &st->
             pitchOLWghtSt.old_T0_med, &st->pitchOLWghtSt.wght_flg, &st->
             pitchOLWghtSt.ada_w, st->old_lags, st->dtx, 1 );
       T_op[1] = T_op[0];
@@ -10340,19 +10341,19 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
       /* Preprocessing of subframe */
       if ( *used_mode != MR475 ) {
-         subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
-               speech[i_subfr], st->mem_err, st->mem_w0, st->zero, st->ai_zero,
-               &st->exc[i_subfr], st->h1, xn, res, st->error );
+         subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->old_speech[st->
+               speech + i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->ai_zero,
+               &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
       }
 
       /* MR475 */
       else {
-         subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->
-               speech[i_subfr], st->mem_err, mem_w0_save, st->zero, st->ai_zero,
-               &st->exc[i_subfr], st->h1, xn, res, st->error );
+         subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->old_speech[st->
+               speech + i_subfr], st->mem_err, mem_w0_save, &st->ai_zero[st->zero], st->ai_zero,
+               &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
 
          if ( evenSubfr != 0 ) {
-            memcpy( h1_sf0, st->h1, L_SUBFR <<2 );
+            memcpy( h1_sf0, &st->hvec[st->h1], L_SUBFR <<2 );
          }
       }
 
@@ -10361,7 +10362,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
       /* Closed-loop LTP search */
       cl_ltp( &st->clLtpSt.pitchSt.T0_prev_subframe, st->tonStabSt.gp, *
-            used_mode, i_subfr, T_op, st->h1, &st->exc[i_subfr], res2, xn,
+            used_mode, i_subfr, T_op, &st->hvec[st->h1], &st->old_exc[st->exc + i_subfr], res2, xn,
             lsp_flag, xn2, y1, &T0, &T0_frac, &gain_pit, gCoeff, &ana, &gp_limit
             );
 
@@ -10375,7 +10376,7 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
       }
 
       /* Innovative codebook search (find index and gain) */
-      cbsearch( *used_mode, subfrNr, xn2, st->h1, T0, st->sharp, gain_pit, code,
+      cbsearch( *used_mode, subfrNr, xn2, &st->hvec[st->h1], T0, st->sharp, gain_pit, code,
             y2, res2, &ana );
 
       /* Quantization of gains. */
@@ -10383,8 +10384,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
             st->gainQuantSt.gc_predUncSt.past_qua_en, st->gainQuantSt.
             sf0_coeff, &st->gainQuantSt.sf0_target_en, &st->gainQuantSt.
             sf0_gcode0_exp, &st->gainQuantSt.
-            sf0_gcode0_fra, &st->gainQuantSt.gain_idx_ptr, &gain_pit_sf0, &
-            gain_code_sf0, res, &st->exc[i_subfr], code, xn, xn2, y1, y2, gCoeff
+            sf0_gcode0_fra, &gain_idx_ptr, &gain_pit_sf0, &
+            gain_code_sf0, res, &st->old_exc[st->exc + i_subfr], code, xn, xn2, y1, y2, gCoeff
             , gp_limit, &gain_pit, &gain_code, &st->gainQuantSt.adaptSt.
             prev_gc, &st->gainQuantSt.adaptSt.onset, st->gainQuantSt.adaptSt
             .ltpg_mem, &st->gainQuantSt.adaptSt.prev_alpha, &ana );
@@ -10397,8 +10398,8 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
 
       /* Subframe Post Processing */
       if ( *used_mode != MR475 ) {
-         subframePostProc( st->speech, i_subfr, gain_pit, gain_code, Aq, synth,
-               xn, code, y1, y2, st->mem_syn, st->mem_err, st->mem_w0, st->exc,
+         subframePostProc( &st->old_speech[st->speech], i_subfr, gain_pit, gain_code, Aq, synth,
+               xn, code, y1, y2, st->mem_syn, st->mem_err, st->mem_w0, &st->old_exc[st->exc],
                &st->sharp );
       }
       else {
@@ -10411,9 +10412,9 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
             T0_frac_sf0 = T0_frac;
 
             /* Subframe Post Porcessing */
-            subframePostProc( st->speech, i_subfr, gain_pit, gain_code, Aq,
+            subframePostProc( &st->old_speech[st->speech], i_subfr, gain_pit, gain_code, Aq,
                   synth, xn, code, y1, y2, mem_syn_save, st->mem_err,
-                  mem_w0_save, st->exc, &st->sharp );
+                  mem_w0_save, &st->old_exc[st->exc], &st->sharp );
             st->sharp = sharp_save;
          }
          else {
@@ -10424,12 +10425,12 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
             memcpy( st->mem_err, mem_err_save, M <<2 );
 
             /* re-build excitation for sf 0 */
-            Pred_lt_3or6( &st->exc[i_subfr_sf0], T0_sf0, T0_frac_sf0, 1 );
-            Convolve( &st->exc[i_subfr_sf0], h1_sf0, y1 );
+            Pred_lt_3or6( &st->old_exc[st->exc + i_subfr_sf0], T0_sf0, T0_frac_sf0, 1 );
+            Convolve( &st->old_exc[st->exc + i_subfr_sf0], h1_sf0, y1 );
             Aq -= MP1;
-            subframePostProc( st->speech, i_subfr_sf0, gain_pit_sf0,
+            subframePostProc( &st->old_speech[st->speech], i_subfr_sf0, gain_pit_sf0,
                   gain_code_sf0, Aq, synth, xn_sf0, code_sf0, y1, y2_sf0, st->
-                  mem_syn, st->mem_err, st->mem_w0, st->exc, &sharp_save );
+                  mem_syn, st->mem_err, st->mem_w0, &st->old_exc[st->exc], &sharp_save );
 
             /* overwrites sharp_save */
             Aq += MP1;
@@ -10438,16 +10439,16 @@ static void cod_amr( cod_amrState *st, enum Mode mode, Float32 new_speech[],
              * re-run pre-processing to get xn right (needed by postproc)
              * (this also reconstructs the unsharpened h1 for sf 1)
              */
-            subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st
-                  ->speech[i_subfr], st->mem_err, st->mem_w0, st->zero, st->
-                  ai_zero, &st->exc[i_subfr], st->h1, xn, res, st->error );
+            subframePreProc( *used_mode, gamma1, gamma1_12k2, gamma2, A, Aq, &st->old_speech[st->
+                  speech + i_subfr], st->mem_err, st->mem_w0, &st->ai_zero[st->zero], st->
+                  ai_zero, &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], xn, res, &st->mem_err[st->error] );
 
             /* re-build excitation sf 1 (changed if lag < L_SUBFR) */
-            Pred_lt_3or6( &st->exc[i_subfr], T0, T0_frac, 1 );
-            Convolve( &st->exc[i_subfr], st->h1, y1 );
-            subframePostProc( st->speech, i_subfr, gain_pit, gain_code, Aq,
+            Pred_lt_3or6( &st->old_exc[st->exc + i_subfr], T0, T0_frac, 1 );
+            Convolve( &st->old_exc[st->exc + i_subfr], &st->hvec[st->h1], y1 );
+            subframePostProc( &st->old_speech[st->speech], i_subfr, gain_pit, gain_code, Aq,
                   synth, xn, code, y1, y2, st->mem_syn, st->mem_err, st->mem_w0,
-                  st->exc, &st->sharp );
+                  &st->old_exc[st->exc], &st->sharp );
          }
       }
 
@@ -10617,7 +10618,6 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->gainQuantSt.sf0_gcode0_fra = 0;
    s->gainQuantSt.sf0_target_en = 0.0F;
    memset( s->gainQuantSt.sf0_coeff, 0, sizeof( Float32 )*5 );
-   s->gainQuantSt.gain_idx_ptr = NULL;
 
    /* reset pitchOLWghtState */
    s->pitchOLWghtSt.old_T0_med = 40;
@@ -10707,23 +10707,23 @@ static void cod_amr_reset( cod_amrState *s, Word32 dtx )
    s->dtxEncSt.dtxHangoverCount = DTX_HANG_CONST;
    s->dtxEncSt.decAnaElapsedCount = DTX_ELAPSED_FRAMES_THRESH;
 
-   /* init speech pointers */
+   /* init speech offsets */
    /* New speech */
-   s->new_speech = s->old_speech + L_TOTAL - L_FRAME;
+   s->new_speech = L_TOTAL - L_FRAME;
 
    /* Present frame */
    s->speech = s->new_speech - L_NEXT;
-   s->p_window = s->old_speech + L_TOTAL - L_WINDOW;
+   s->p_window = L_TOTAL - L_WINDOW;
 
    /* For LPC window				*/
    s->p_window_12k2 = s->p_window - L_NEXT;
 
-   /* Initialize static pointers */
-   s->wsp = s->old_wsp + PIT_MAX;
-   s->exc = s->old_exc + PIT_MAX + L_INTERPOL;
-   s->zero = s->ai_zero + MP1;
-   s->error = s->mem_err + M;
-   s->h1 = &s->hvec[L_SUBFR];
+   /* Initialize static offset */
+   s->wsp = PIT_MAX;
+   s->exc = PIT_MAX + L_INTERPOL;
+   s->zero = MP1;
+   s->error = M;
+   s->h1 = L_SUBFR;
 
    /* Static vectors to zero */
    memset( s->old_speech, 0, sizeof( Float32 )*L_TOTAL );

@@ -167,7 +167,7 @@ typedef struct
 {
    /* Excitation vector */
    Word32 old_exc[L_SUBFR + PIT_MAX + L_INTERPOL];
-   Word32 *exc;
+   UWord16 exc;
    Word32 lsp_old[M];
 
 

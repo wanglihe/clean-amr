@@ -205,8 +205,6 @@ typedef struct
    Float32 sf0_coeff[5];
    Word32 sf0_gcode0_exp;
    Word32 sf0_gcode0_fra;
-   Word16 *gain_idx_ptr;
-
 
    enc_gc_predState gc_predSt;
    enc_gc_predState gc_predUncSt;
@@ -260,13 +258,15 @@ typedef struct
 {
    /* Speech vector */
    Float32 old_speech[L_TOTAL];
-   Float32 *speech, *p_window, *p_window_12k2;
-   Float32 *new_speech;   /* Global variable */
+   UWord16 p_window;
+   UWord16 p_window_12k2;
+   UWord16 speech;
+   UWord16 new_speech;   /* Global variable */
 
 
    /* Weight speech vector */
    Float32 old_wsp[L_FRAME + PIT_MAX];
-   Float32 *wsp;
+   UWord16 wsp;
 
 
    /* OL LTP states */
@@ -276,16 +276,16 @@ typedef struct
 
    /* Excitation vector */
    Float32 old_exc[L_FRAME + PIT_MAX + L_INTERPOL];
-   Float32 *exc;
+   UWord16 exc;
 
 
    /* Zero vector */
    Float32 ai_zero[L_SUBFR + MP1];
-   Float32 *zero;
+   UWord16 zero;
 
 
    /* Impulse response vector */
-   Float32 *h1;
+   UWord16 h1;
    Float32 hvec[L_SUBFR * 2];
 
 
@@ -305,7 +305,8 @@ typedef struct
 
    /* Filter's memory */
    Float32 mem_syn[M], mem_w0[M], mem_w[M];
-   Float32 mem_err[M + L_SUBFR], *error;
+   Float32 mem_err[M + L_SUBFR];
+   UWord16 error;
    Float32 sharp;
 }cod_amrState;
 typedef struct
