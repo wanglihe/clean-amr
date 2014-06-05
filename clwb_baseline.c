@@ -11,7 +11,7 @@
 
 
 static const int TIMES = 10;
-static const int PCM_SIZE = 160;
+static const int SAMPLES_PER_FRAME = 320;
 
 extern const UWord8 block_size[];
 
@@ -31,7 +31,9 @@ int main(int argc, const char* argv[]) {
     char magic[sizeof(AMR_MAGIC_NUMBER)];
     fread(magic, sizeof(char), strlen(AMR_MAGIC_NUMBER), amrwb);
     int buf_amr_size = fread(buf_amr, sizeof(char), BUF_SIZE, amrwb);
-    int buf_pcm_size = buf_amr_size/61*160*sizeof(int16_t);
+    int amr_frame_size = block_size[(buf_amr[0] >> 3) & 0x0F];
+    int frame_count = buf_amr_size / amr_frame_size;
+    int buf_pcm_size = frame_count*SAMPLES_PER_FRAME*sizeof(int16_t);
     fclose(amrwb);
 
     struct timespec time_start,time_end;
@@ -46,14 +48,14 @@ int main(int argc, const char* argv[]) {
         while ((frame - &buf_amr[0]) < buf_amr_size) {
             D_IF_decode(&destate, frame, speech, 0);
             frame += block_size[frame[0]>> 3 & 0x0F];
-            speech += PCM_SIZE;
+            speech += SAMPLES_PER_FRAME;
         }
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
     time = timediff(&time_start, &time_end);
     //printf("time: %lf\n", time);
-    printf("%s decode: %lf frames per 20ms\n", argv[0], (buf_amr_size)*TIMES/61/time/50);
+    printf("%s decode: %lf frames per 20ms\n", argv[0], frame_count*TIMES/time/50);
 
     clock_gettime(CLOCK_REALTIME, &time_start);
     for (int i = 0; i < TIMES; i++) {
@@ -65,13 +67,13 @@ int main(int argc, const char* argv[]) {
         E_IF_init(&enstate);
         while ((speech - (int16_t*)&buf_pcm[0]) < buf_pcm_size) {
             int byte_counter = E_IF_encode(&enstate, req_mode, speech, frame, dtx);
-            speech += 160;
+            speech += SAMPLES_PER_FRAME;
             frame += block_size[req_mode];
         }
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
     time = timediff(&time_start, &time_end);
-    printf("%s encode: %lf frames per 20ms\n", argv[0], (buf_amr_size)*TIMES/61/time/50);
+    printf("%s encode: %lf frames per 20ms\n", argv[0], frame_count*TIMES/time/50);
     return 0;
 }

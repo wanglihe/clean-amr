@@ -11,7 +11,7 @@
 
 
 static const int TIMES = 10;
-static const int PCM_SIZE = 160;
+static const int SAMPLES_PER_FRAME = 160;
 
 static const short block_size[16]={ 13, 14, 16, 18, 20, 21, 27, 32, 6 , 0 , 0 , 0 , 0 , 0 , 0 , 1  };
 
@@ -31,9 +31,11 @@ int main(int argc, const char* argv[]) {
     char magic[sizeof(AMR_MAGIC_NUMBER)];
     fread(magic, sizeof(char), strlen(AMR_MAGIC_NUMBER), amrnb);
     int buf_amr_size = fread(buf_amr, sizeof(char), BUF_SIZE, amrnb);
-    int buf_pcm_size = buf_amr_size/32*160*sizeof(int16_t);
+    int amr_frame_size = block_size[(buf_amr[0] >> 3) & 0x0F];
+    int frame_count = buf_amr_size / amr_frame_size;
+    int buf_pcm_size = frame_count*SAMPLES_PER_FRAME*sizeof(int16_t);
     fclose(amrnb);
-    //printf("buf_amr_size: %d, buf_pcm_size: %d\n", buf_amr_size, buf_pcm_size);
+    //printf("buf_amr_size: %d, buf_amr[0]: %x, amr_frame_size: %d, frame_count: %d, buf_pcm_size: %d\n", buf_amr_size, buf_amr[0], amr_frame_size, frame_count, buf_pcm_size);
     //printf("buf_amr[0]: %p buf_pcm[0]: %p\n", &buf_amr[0], &buf_pcm[0]);
 
     struct timespec time_start,time_end;
@@ -46,16 +48,17 @@ int main(int argc, const char* argv[]) {
         dec_interface_State destate;
         Decoder_Interface_init(&destate);
         while ((frame - &buf_amr[0]) < buf_amr_size) {
+            //printf("frame: %p speech: %p frame[0]: %d\n", frame, speech, block_size[(frame[0] >> 3) & 0x000F]);
             Decoder_Interface_Decode(&destate, frame, speech, 0);
             frame += block_size[(frame[0] >> 3) & 0x000F];
-            speech += PCM_SIZE;
+            speech += SAMPLES_PER_FRAME;
         }
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
     time = timediff(&time_start, &time_end);
     //printf("time: %lf\n", time);
-    printf("%s decode: %lf frames per 20ms\n", argv[0], (buf_amr_size)*TIMES/32/time/50);
+    printf("%s decode: %lf frames per 20ms\n", argv[0], frame_count*TIMES/time/50);
 
     clock_gettime(CLOCK_REALTIME, &time_start);
     for (int i = 0; i < TIMES; i++) {
@@ -66,14 +69,15 @@ int main(int argc, const char* argv[]) {
         enc_interface_State enstate;
         Encoder_Interface_init(&enstate, dtx);
         while ((speech - (int16_t*)&buf_pcm[0]) < buf_pcm_size) {
+            //printf("frame: %p speech: %p\n", frame, speech);
             int byte_counter = Encoder_Interface_Encode(&enstate, req_mode, speech, frame, 0);
-            speech += 160;
+            speech += SAMPLES_PER_FRAME;
             frame += block_size[req_mode];
         }
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
     time = timediff(&time_start, &time_end);
-    printf("%s encode: %lf frames per 20ms\n", argv[0], (buf_amr_size)*TIMES/32/time/50);
+    printf("%s encode: %lf frames per 20ms\n", argv[0], frame_count*TIMES/time/50);
     return 0;
 }
