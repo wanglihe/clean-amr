@@ -8,12 +8,12 @@ AMRWBDIR = 3gpp-amrwb/src
 
 CLAMRDIR = src
 
-CFLAGS = -O3 -Wall #-DVAD2
+CFLAGS = -O3 -Wall -D_POSIX_C_SOURCE=200809L #-DVAD2
 CFLAGS_3GPPNB = -std=c89 $(CFLAGS) -I$(AMRNBDIR)
 CFLAGS_3GPPWB = -std=c89 $(CFLAGS) -I$(AMRWBDIR)
 CFLAGS_CLAMR  = -std=c99 $(CFLAGS) -I$(CLAMRDIR)
 
-LDFLAGS = -lm
+LDFLAGS = -lm -lrt
 
 #
 # source/object files
@@ -102,6 +102,15 @@ c3gwb: c3gwb.o $(AMRWB_OBJS)
 cclwb: cclwb.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
+baseline: clnb_baseline clwb_baseline
+	@./clnb_baseline
+	@./clwb_baseline
+
+clnb_baseline: clnb_baseline.o $(CLAMR_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
+clwb_baseline: clwb_baseline.o $(CLAMR_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
+
 
 $(AMRNBDIR)/%.o: $(AMRNBDIR)/%.c
 	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
@@ -114,8 +123,8 @@ $(AMRWBDIR)/%.o: $(AMRWBDIR)/%.c
 
 clean:
 	rm -f $(CLAMR_OBJS)
-	rm -f cclnb
-	rm -f cclwb
+	rm -f cclnb cclwb
+	rm -f clnb_baseline clwb_baseline
 	rm -f *.orig *.amrnb *.amrwb *.back
 
 cleanall: clean
@@ -130,5 +139,11 @@ cclnb.o: cclnb.c $(CLAMRDIR)/typedef.h
 c3gwb.o: c3gwb.c $(AMRWBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPWB) $< -o $@
 cclwb.o: cclwb.c $(CLAMRDIR)/typedef.h
+	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
+
+clnb_baseline.o: clnb_baseline.c $(CLAMRDIR)/typedef.h
+	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
+
+clwb_baseline.o: clwb_baseline.c $(CLAMRDIR)/typedef.h
 	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
 
