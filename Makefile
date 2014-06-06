@@ -1,5 +1,5 @@
-#CC = gcc
-CC = clang
+CC = gcc
+#CC = clang
 MAKEFILENAME = makefile
 
 
@@ -8,7 +8,7 @@ AMRWBDIR = 3gpp-amrwb/src
 
 CLAMRDIR = src
 
-CFLAGS = -g -O0 -Wall -D_POSIX_C_SOURCE=200809L #-DVAD2
+CFLAGS = -g -O3 -Wall -D_POSIX_C_SOURCE=200809L #-DVAD2
 CFLAGS_3GPPNB = -std=c89 $(CFLAGS) -I$(AMRNBDIR)
 CFLAGS_3GPPWB = -std=c89 $(CFLAGS) -I$(AMRWBDIR)
 CFLAGS_CLAMR  = -std=c99 $(CFLAGS) -I$(CLAMRDIR)
@@ -66,16 +66,30 @@ CLAMR_SRCS=\
 	$(CLAMRDIR)/enc_util.c\
 	$(CLAMRDIR)/if_rom.c
 
+TEST_SRCS=\
+	  c3gnb.c\
+	  c3gwb.c\
+	  cclnb.c\
+	  cclwb.c\
+	  3gnb_baseline.c\
+	  3gwb_baseline.c\
+	  clnb_baseline.c\
+	  clwb_baseline.c
+
 
 AMRNB_OBJS=$(AMRNB_SRCS:.c=.o)
 AMRWB_OBJS=$(AMRWB_SRCS:.c=.o)
 
 CLAMR_OBJS=$(CLAMR_SRCS:.c=.o)
 
-ALL_SRCS=$(AMRNB_SRCS) $(AMRWB_SRCS) $(CLAMR_SRCS)
-ALL_OBJS=$(AMRNB_OBJS) $(AMRWB_OBJS) $(CLAMR_OBJS)
+TEST_OBJS=$(TEST_SRCS:.c=.o)
 
-all: $(ALL_OBJS) c3gnb.o cclnb.o c3gwb.o cclwb.o
+ALL_SRCS=$(AMRNB_SRCS) $(AMRWB_SRCS) $(CLAMR_SRCS) $(TEST_SRCS)
+ALL_OBJS=$(AMRNB_OBJS) $(AMRWB_OBJS) $(CLAMR_OBJS) $(TEST_OBJS)
+
+all: $(ALL_OBJS)
+
+check: checknb checkwb
 
 checknb: c3gnb cclnb
 	./c3gnb
@@ -91,8 +105,6 @@ checkwb: c3gwb cclwb
 	md5sum c3gwb.amrwb cclwb.amrwb
 	md5sum c3gwb.back cclwb.back
 
-check: checknb checkwb
-
 c3gnb: c3gnb.o $(AMRNB_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 cclnb: cclnb.o $(CLAMR_OBJS)
@@ -102,10 +114,14 @@ c3gwb: c3gwb.o $(AMRWB_OBJS)
 cclwb: cclwb.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
-baseline: clnb_baseline clwb_baseline 3gnb_baseline 3gwb_baseline
+baseline: baselinenb baselinewb
+
+baselinenb: 3gnb_baseline clnb_baseline
 	@./3gnb_baseline
-	@./3gwb_baseline
 	@./clnb_baseline
+
+baselinewb: 3gwb_baseline clwb_baseline
+	@./3gwb_baseline
 	@./clwb_baseline
 
 3gnb_baseline: 3gnb_baseline.o $(AMRNB_OBJS)
@@ -129,15 +145,15 @@ $(AMRWBDIR)/%.o: $(AMRWBDIR)/%.c
 	$(CC) -c $(CFLAGS_3GPPWB) $< -o $@
 
 clean:
-	rm -f $(CLAMR_OBJS)
+	rm -f $(CLAMR_OBJS) $(TEST_OBJS)
 	rm -f cclnb cclwb
 	rm -f clnb_baseline clwb_baseline
 	rm -f *.orig *.amrnb *.amrwb *.back
 
 cleanall: clean
 	rm -f $(ALL_OBJS)
-	rm -f c3gnb
-	rm -f c3gwb
+	rm -f c3gnb c3gwb
+	rm -f 3gnb_baseline 3gwb_baseline
 
 c3gnb.o: c3gnb.c $(AMRNBDIR)/typedef.h
 	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@

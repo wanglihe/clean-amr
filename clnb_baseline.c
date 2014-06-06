@@ -10,7 +10,7 @@
 #define BUF_SIZE (2*1024*1024)
 
 
-static const int TIMES = 1;
+static const int TIMES = 10;
 static const int SAMPLES_PER_FRAME = 160;
 
 static const short block_size[16]={ 13, 14, 16, 18, 20, 21, 27, 32, 6 , 0 , 0 , 0 , 0 , 0 , 0 , 1  };

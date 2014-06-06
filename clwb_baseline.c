@@ -10,7 +10,7 @@
 #define BUF_SIZE (2*1024*1024)
 
 
-static const int TIMES = 1;
+static const int TIMES = 10;
 static const int SAMPLES_PER_FRAME = 320;
 
 extern const UWord8 block_size[];
