@@ -24,8 +24,6 @@ double timediff(const struct timespec* start, const struct timespec* end) {
 int main(int argc, const char* argv[]) {
     int i,j;
     int dtx = 0;
-    void* enstate = E_IF_init();
-    void* destate = D_IF_init();
     unsigned char* buf_amr = malloc(BUF_SIZE);
     unsigned char* buf_pcm = malloc(BUF_SIZE);
 
@@ -38,6 +36,7 @@ int main(int argc, const char* argv[]) {
     int frame_count = buf_amr_size / amr_frame_size;
     int buf_pcm_size = frame_count*SAMPLES_PER_FRAME*sizeof(Word16);
     /*printf("buf_amr_size: %d,  amr_frame_size: %d, frame_count: %d, buf_pcm_size: %d\n", buf_amr_size,  amr_frame_size, frame_count, buf_pcm_size);*/
+    fclose(amrnb);
 
     struct timespec time_start,time_end;
     double time;
@@ -46,12 +45,14 @@ int main(int argc, const char* argv[]) {
     for (i=0; i < TIMES; i++) {
         unsigned char* frame = &buf_amr[0];
         Word16* speech = (Word16*)&buf_pcm[0];
+        void* destate = D_IF_init();
         while ((frame - &buf_amr[0]) < buf_amr_size) {
             /*printf("frame: %ld speech: %ld\n", (frame - &buf_amr[0]), (speech - (Word16*)&buf_pcm[0]));*/
             D_IF_decode(destate, frame, speech, 0);
             frame += block_size[(frame[0] >> 3) & 0x000F];
             speech += SAMPLES_PER_FRAME;
         }
+        D_IF_exit(destate);
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
@@ -65,6 +66,7 @@ int main(int argc, const char* argv[]) {
         unsigned char* frame = &buf_amr[0];
         Word16* speech = (Word16*)&buf_pcm[0];
         int dtx = 0;
+        void* enstate = E_IF_init();
         while ((speech - (Word16*)&buf_pcm[0]) < buf_pcm_size) {
             /*printf("frame: %ld speech: %ld\n", (frame - &buf_amr[0]), (speech - (Word16*)&buf_pcm[0]));*/
             int byte_counter = E_IF_encode(enstate, req_mode, speech, frame, 0);
@@ -73,17 +75,15 @@ int main(int argc, const char* argv[]) {
             frame += byte_counter;
             /*frame += 61;*/
         }
+        E_IF_exit(enstate);
     }
     clock_gettime(CLOCK_REALTIME, &time_end);
 
     time = timediff(&time_start, &time_end);
     printf("%s encode: %lf frames per 20ms\n", argv[0], frame_count*TIMES/time/50);
 
-    E_IF_exit(enstate);
-    D_IF_exit(destate);
     free(buf_amr);
     free(buf_pcm);
-    fclose(amrnb);
     return 0;
 }
 
