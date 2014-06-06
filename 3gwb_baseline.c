@@ -29,7 +29,7 @@ int main(int argc, const char* argv[]) {
     unsigned char* buf_amr = malloc(BUF_SIZE);
     unsigned char* buf_pcm = malloc(BUF_SIZE);
 
-    FILE* amrnb = fopen("standard_amrwb.amr", "r");
+    FILE* amrnb = fopen("standard_amrwb.awb", "r");
     if (NULL == amrnb) exit(1);
     char magic[sizeof(AMR_MAGIC_NUMBER)];
     fread(magic, sizeof(char), strlen(AMR_MAGIC_NUMBER), amrnb);

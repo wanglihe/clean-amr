@@ -24,7 +24,7 @@ double timediff(const struct timespec* start, const struct timespec* end) {
 
 
 int main(int argc, const char* argv[]) {
-    FILE* amrwb = fopen("standard_amrwb.amr", "r");
+    FILE* amrwb = fopen("standard_amrwb.awb", "r");
     if (NULL == amrwb) exit(1);
     //unsigned char buf_amr[BUF_SIZE];
     //unsigned char buf_pcm[BUF_SIZE];
