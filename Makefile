@@ -1,5 +1,5 @@
-CC = gcc
-#CC = clang
+#CC = gcc
+CC = clang
 MAKEFILENAME = makefile
 
 
@@ -8,7 +8,7 @@ AMRWBDIR = 3gpp-amrwb/src
 
 CLAMRDIR = src
 
-CFLAGS = -O3 -Wall -D_POSIX_C_SOURCE=200809L #-DVAD2
+CFLAGS = -g -O0 -Wall -D_POSIX_C_SOURCE=200809L #-DVAD2
 CFLAGS_3GPPNB = -std=c89 $(CFLAGS) -I$(AMRNBDIR)
 CFLAGS_3GPPWB = -std=c89 $(CFLAGS) -I$(AMRWBDIR)
 CFLAGS_CLAMR  = -std=c99 $(CFLAGS) -I$(CLAMRDIR)
@@ -102,9 +102,16 @@ c3gwb: c3gwb.o $(AMRWB_OBJS)
 cclwb: cclwb.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
-baseline: clnb_baseline clwb_baseline
+baseline: clnb_baseline clwb_baseline 3gnb_baseline 3gwb_baseline
+	@./3gnb_baseline
+	@./3gwb_baseline
 	@./clnb_baseline
 	@./clwb_baseline
+
+3gnb_baseline: 3gnb_baseline.o $(AMRNB_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
+3gwb_baseline: 3gwb_baseline.o $(AMRWB_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
 
 clnb_baseline: clnb_baseline.o $(CLAMR_OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
@@ -141,9 +148,13 @@ c3gwb.o: c3gwb.c $(AMRWBDIR)/typedef.h
 cclwb.o: cclwb.c $(CLAMRDIR)/typedef.h
 	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
 
+3gnb_baseline.o: 3gnb_baseline.c $(AMRNBDIR)/typedef.h
+	$(CC) -c $(CFLAGS_3GPPNB) $< -o $@
+3gwb_baseline.o: 3gwb_baseline.c $(AMRNBDIR)/typedef.h
+	$(CC) -c $(CFLAGS_3GPPWB) $< -o $@
+
 clnb_baseline.o: clnb_baseline.c $(CLAMRDIR)/typedef.h
 	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
-
 clwb_baseline.o: clwb_baseline.c $(CLAMRDIR)/typedef.h
 	$(CC) -c $(CFLAGS_CLAMR) $< -o $@
 
